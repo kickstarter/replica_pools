@@ -1,4 +1,4 @@
-module SlavePools
+module SlavePoolsModule
   # Implements the methods expected by the QueryCache module
   module QueryCacheCompat
     def select_all(*a, &b)

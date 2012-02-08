@@ -1,7 +1,7 @@
 require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 require SLAVE_POOLS_SPEC_DIR + '/../lib/slave_pools'
 
-describe SlavePools::ConnectionProxy do
+describe SlavePools do
 
   before(:all) do
     ActiveRecord::Base.configurations = SLAVE_POOLS_SPEC_CONFIG
@@ -16,41 +16,41 @@ describe SlavePools::ConnectionProxy do
   
   describe "standard setup" do
     before(:each) do
-      SlavePools::ConnectionProxy.master_models = ['MasterModel']
-      SlavePools::ConnectionProxy.setup!
+      SlavePoolsModule::ConnectionProxy.master_models = ['MasterModel']
+      SlavePoolsModule::ConnectionProxy.setup!
       @proxy = ActiveRecord::Base.connection_proxy
       @slave_pool_hash = @proxy.slave_pools
       @slave_pool_array = @slave_pool_hash.values
       @master = @proxy.master.retrieve_connection
-      @default_slave1 = SlavePools::DefaultDb1.retrieve_connection
-      @default_slave2 = SlavePools::DefaultDb2.retrieve_connection
-      @secondary_slave1 = SlavePools::SecondaryDb1.retrieve_connection
-      @secondary_slave2 = SlavePools::SecondaryDb2.retrieve_connection
-      @secondary_slave3 = SlavePools::SecondaryDb3.retrieve_connection
+      @default_slave1 = SlavePoolsModule::DefaultDb1.retrieve_connection
+      @default_slave2 = SlavePoolsModule::DefaultDb2.retrieve_connection
+      @secondary_slave1 = SlavePoolsModule::SecondaryDb1.retrieve_connection
+      @secondary_slave2 = SlavePoolsModule::SecondaryDb2.retrieve_connection
+      @secondary_slave3 = SlavePoolsModule::SecondaryDb3.retrieve_connection
     end
   
     it 'AR::B should respond to #connection_proxy' do
-      ActiveRecord::Base.connection_proxy.should be_kind_of(SlavePools::ConnectionProxy)
+      ActiveRecord::Base.connection_proxy.should be_kind_of(SlavePoolsModule::ConnectionProxy)
     end
 
     it 'FooModel#connection should return an instance of SlavePools::ConnectionProxy' do
-      FooModel.connection.should be_kind_of(SlavePools::ConnectionProxy)
+      FooModel.connection.should be_kind_of(SlavePoolsModule::ConnectionProxy)
     end
 
     it 'MasterModel#connection should not return an instance of SlavePools::ConnectionProxy' do
-      MasterModel.connection.should_not be_kind_of(SlavePools::ConnectionProxy)
+      MasterModel.connection.should_not be_kind_of(SlavePoolsModule::ConnectionProxy)
     end
 
     it "should generate classes for each entry in the database.yml" do
-      defined?(SlavePools::DefaultDb1).should_not be_nil
-      defined?(SlavePools::DefaultDb2).should_not be_nil
-      defined?(SlavePools::SecondaryDb1).should_not be_nil
-      defined?(SlavePools::SecondaryDb2).should_not be_nil
-      defined?(SlavePools::SecondaryDb3).should_not be_nil
+      defined?(SlavePoolsModule::DefaultDb1).should_not be_nil
+      defined?(SlavePoolsModule::DefaultDb2).should_not be_nil
+      defined?(SlavePoolsModule::SecondaryDb1).should_not be_nil
+      defined?(SlavePoolsModule::SecondaryDb2).should_not be_nil
+      defined?(SlavePoolsModule::SecondaryDb3).should_not be_nil
     end
     
     it "should not generate classes for an invalid DB in the database.yml" do
-      defined?(SlavePools::DefaultFakeDb).should be_nil
+      defined?(SlavePoolsModule::DefaultFakeDb).should be_nil
     end
   
     it 'should handle nested with_master-blocks correctly' do
@@ -88,14 +88,14 @@ describe SlavePools::ConnectionProxy do
     end
   
     it 'should not switch to the next reader on selects' do
-      @slave_pool_hash[:default].slaves.first.should == SlavePools::DefaultDb2 #the unordered hash puts db2 first
+      @slave_pool_hash[:default].slaves.first.should == SlavePoolsModule::DefaultDb2 #the unordered hash puts db2 first
       @default_slave2.should_receive(:select_one).exactly(6)
       @default_slave1.should_receive(:select_one).exactly(0)
       6.times { @proxy.select_one(@sql) }
     end
     
     it '#next_slave! should switch to the next slave' do
-      @slave_pool_hash[:default].slaves.first.should == SlavePools::DefaultDb2 #the unordered hash puts db2 first
+      @slave_pool_hash[:default].slaves.first.should == SlavePoolsModule::DefaultDb2 #the unordered hash puts db2 first
       @default_slave2.should_receive(:select_one).exactly(3)
       @default_slave1.should_receive(:select_one).exactly(7)
       3.times { @proxy.select_one(@sql) }

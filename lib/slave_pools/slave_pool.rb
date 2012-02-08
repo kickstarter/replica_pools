@@ -1,4 +1,4 @@
-module SlavePools
+module SlavePoolsModule
   class SlavePool
     # extend ThreadLocalAccessors
     

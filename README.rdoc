@@ -1,16 +1,98 @@
 = SlavePools
 
-=====-- The SlavePools GEM started as a fork of Maximilian Sch\303\266fmann's https://github.com/schoefmax/multi_db
-=====-- The MultiDB gem was inspired by Rick Olson's "masochism"-Plugin
+== Easy Single Master/ Multiple Slave Setup for use in Ruby/Rails projects
 
-SlavePools uses a connection proxy, which sends read queries to slave databases,
-and all write queries to the master database (Read/Write Split). You can specify
-"pools" of slave DB's to use for sections of your traffic (e.g. seperating admin and user traffic)
-Within transactions, while executing ActiveRecord Observers and
-within "with_master" blocks (see below), even read queries are sent to the 
-master database. You can specify which pool to use in a "with_pool" block
+SlavePools builds a base layer of master/slave query splitting, by overwriting ActiveRecord's connection (with connection_proxy). With this in place, you can easily add a second layer of traffic splitting, by wrapping requests in the provided helper methods (examples below), and have a manageable master/slave solution for a standard rails application
 
-Each slave in a pool is used until a next_reader! method is called
+Overview
+* Sends only whitelisted SELECT-type queries to the Slaves 
+* Sends all other queries to the Master
+* Works with query caching and transactions
+* Easy to separate types of read traffic into different collections of slaves (e.g. separating admin and user traffic)
+* Minimalist approach
+  * doesn't include sharding
+  * doesn't create a new ActiveRecord adapter
+  * doesn't weight slave db's
+  * Builds onto a standard database.yml file (gem doesn't initialize if no slaves are specified)
+  * doesn't switch slaves on its own (the user specifies when to switch in their code)
+  
+The SlavePools GEM started as a fork of Maximilian Sch\303\266fmann's https://github.com/schoefmax/multi_db
+The MultiDB gem was inspired by Rick Olson's "masochism"-Plugin
+
+== Usage
+
+Toggle to next slave:
+  SlavePools.next_slave!
+
+Specify a different slave pool than the default:
+  SlavePools.with_pool('other_pool') { #do stuff }
+
+Specifically use the master for a call:
+  SlavePools.with_master { #do stuff }
+
+Determine if there are slaves:
+  SlavePools.active?
+
+The gem, by default, sends writes and reads to the master and slave databases, respectfully. But in your app, if you write to the master during a request, you will probably want to read from the master in that request as well, in case there is replication. You will also probably want to read from the master on the next request (after a write to the master) to cover redirects.
+
+Using a standard rails application setup, you can achieve this by adding these example methods to your application controller (some of these may be folded in the gem, but leaving out for now):  
+
+  class ApplicationController < ActionController::Base
+
+    around_filter   :stick_to_master_for_updates 
+    around_filter   :use_master_for_redirect #goes with above
+    after_filter    :switch_to_next_slave
+  
+    def switch_to_next_slave
+      SlavePools.next_slave! if slaves?
+    end
+
+    def use_admin_slave_pool
+      SlavePools.with_pool('admin') { yield } if slaves?
+    end
+
+    def stick_to_master_for_updates
+      if slaves? && (request.post? || request.put? || request.delete?)
+        SlavePools.with_master { yield }
+        session[:stick_to_master] = 1
+      else
+        yield
+      end
+    end
+
+    def use_master_for_redirect
+      if slaves? && session[:stick_to_master]
+        session[:stick_to_master] = nil
+        SlavePools.with_master { yield }
+      else
+        yield
+      end
+    end
+
+    def use_master
+      if slaves?
+        SlavePools.with_master { yield }
+        session[:stick_to_master] = 1
+      else
+        yield
+      end
+    end
+
+    def slaves?
+      SlavePools.active?
+    end
+  end
+  
+For other cases where you use the master for writes, you should wrap the request in a 'use_master' block
+
+  class PostsController < ApplicationController
+    around_filter :use_master, :only=>:index
+
+    def index
+      Activity.create() 
+      # index is a GET call, but we've decided to record something, so we want to wrap it in a use_master block
+    end
+  end
 
 * works with activerecord 3.0 (not tested with Rails 2)
 
@@ -21,6 +103,9 @@ Add to your Gemfile
   gem 'slave_pools'
 
 === Setup
+
+slave_pools identifies slave databases by looking for entries of the form
+"<tt><environment>_pool_<pool_name>_name_<db_name></tt>".
 
 In your database.yml, add sections for the slaves, e.g.:
 
@@ -44,11 +129,7 @@ In your database.yml, add sections for the slaves, e.g.:
     ...
   development_pool_admin_name_another_slave: # that would be a slave named 'another_slave' in the 'admin' pool
 
-*NOTE*: slave_pools identifies slave databases by looking for entries of the form
-"<tt><environment>_pool_<pool_name>_name_<db_name></tt>". 
-
-This creates an abstract classes named <tt>SlavePools::DefaultDb1</tt> for each db of the form <tt>SlavePools::<PoolName><DbName></tt>etc.
-If no slaves are specified, the SlavePools setup does not run, and the development DB would be used as normal.
+This also creates an abstract classes named <tt>SlavePools::DefaultDb1</tt> for each db of the form <tt>SlavePools::<PoolName><DbName></tt>etc. If no slaves are specified, the SlavePools setup does not run, and the development DB would be used as normal.
 
 For development testing, I recommend creating a read-only mysql user and just point all of your slave DB's to the your development DB using the read-only user.
 
@@ -56,73 +137,15 @@ The Default SlavePool will be used for all requests, so you should name on of th
 
 To enable the proxy globally, add this to a config/initializers:
 
-  SlavePools::ConnectionProxy.setup!
+  SlavePools.setup!
 
 If you only want to enable it for specific environments, add this to 
 the corresponding file in config/environments:
 
   config.after_initialize do
-    SlavePools::ConnectionProxy.setup!
+    SlavePools.setup!
   end
   
-== Usage
-
-With rails it is helpful to add these controller methods to the application controller (these will probably be folded in the gem, but leaving out for now):
-class ApplicationController < ActionController::Base
-
-  around_filter   :stick_to_master_for_updates 
-  around_filter   :use_master_for_redirect #goes with above
-  after_filter    :switch_to_next_slave
-  
-  def switch_to_next_slave
-    if slaves?
-      ActiveRecord::Base.connection_proxy.next_slave!
-    end
-  end
-  
-  # can be used in 
-  def use_admin_slave_pool
-    if slaves?
-      ActiveRecord::Base.connection_proxy.with_pool('admin') { yield }
-    end
-  end
-  
-  # automatically wrap put/post/delete requests with a with_master block
-  # specify the next request to use the master DB 
-  # (i.e. if you write to the master, you probably want the next read request/redirect to also come from the master)
-  def stick_to_master_for_updates
-    if slaves? && (request.post? || request.put? || request.delete?)
-      ActiveRecord::Base.connection_proxy.with_master { yield }
-      session[:stick_to_master] = 1
-    else
-      yield
-    end
-  end
-  
-  def use_master_for_redirect
-    if slaves? && session[:stick_to_master]
-      session[:stick_to_master] = nil
-      ActiveRecord::Base.connection_proxy.with_master { yield }
-    else
-      yield
-    end
-  end
-  
-  #wrap 'get' requests that edit items with this around_filter
-  def use_master
-    if slaves?
-      ActiveRecord::Base.connection_proxy.with_master { yield }
-      session[:stick_to_master] = 1
-    else
-      yield
-    end
-  end
-  
-  # if this is defined, there are SlavePools in use.
-  def slaves?
-    ActiveRecord::Base.respond_to?('connection_proxy')
-  end
-end
 
 === Using with Phusion Passenger 
 
@@ -169,8 +192,8 @@ Just add this to your controller:
 
 In your environment.rb or an initializer, add this *before* the call to <tt>setup!</tt>:
 
-  SlavePools::ConnectionProxy.master_models = ['CGI::Session::ActiveRecordStore::Session', 'PaymentTransaction', ...]
-  SlavePools::ConnectionProxy.setup!
+  SlavePoolsModule::ConnectionProxy.master_models = ['CGI::Session::ActiveRecordStore::Session', 'PaymentTransaction', ...]
+  SlavePoolsModule::ConnectionProxy.setup!
 
 *NOTE*: You cannot safely add more master_models after calling <tt>setup!</tt>.
 === Features
@@ -199,16 +222,17 @@ In your environment.rb or an initializer, add this *before* the call to <tt>setu
 * does not blacklist slaves for timing out (we want other more robust monitoring software to take care of this)
 * better default case handling - if no slave DB's are specified, the regular Environment database is used, and the gem is
   not initialized
+* added a wrapper class for shorter calls
 
 === See also
 
-==== Masochism
+===== Masochism
 
 The original master/slave plugin:
 
 * http://github.com/technoweenie/masochism
 
-==== MultiDb
+===== MultiDb
 
 The project is based on:
 

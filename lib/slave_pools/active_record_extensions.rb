@@ -1,4 +1,4 @@
-module SlavePools
+module SlavePoolsModule
   module ActiveRecordExtensions
     def self.included(base)
       base.send :include, InstanceMethods
@@ -48,23 +48,7 @@ module SlavePools
             self.connection_proxy
           end
         end
-      end
-      
-      # #new method to verify whether DB connection is active?
-      # def connection_valid?(db_config = nil)
-      #   is_connected = false
-      #   if db_config
-      #     begin
-      #       establish_connection(db_config)
-      #       connection
-      #       is_connected = self.connected?
-      #       #remove_connection
-      #     rescue
-      #     end
-      #   end
-      #   return is_connected
-      # end
-      
+      end      
     end
   end
 end

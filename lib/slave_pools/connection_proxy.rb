@@ -1,6 +1,6 @@
 require 'active_record/connection_adapters/abstract/query_cache'
 
-module SlavePools
+module SlavePoolsModule
   class ConnectionProxy
     include ActiveRecord::ConnectionAdapters::QueryCache
     include QueryCacheCompat
@@ -62,8 +62,8 @@ module SlavePools
         # if there are no slave pools, we just want to silently exit and not edit the ActiveRecord::Base.connection
         if !slave_pools.empty?
           master = ActiveRecord::Base
-          master.send :include, SlavePools::ActiveRecordExtensions
-          ActiveRecord::Observer.send :include, SlavePools::ObserverExtensions
+          master.send :include, SlavePoolsModule::ActiveRecordExtensions
+          ActiveRecord::Observer.send :include, SlavePoolsModule::ObserverExtensions
           
           master.connection_proxy = new(master, slave_pools)
           master.logger.info("** slave_pools with master and #{slave_pools.length} slave_pool#{"s" if slave_pools.length > 1} (#{slave_pools.keys}) loaded.")
@@ -258,13 +258,13 @@ module SlavePools
     
     def self.add_to_pool(slave_pools, pool_name, slave_name, full_db_name)
       slave_pools[pool_name] ||= []
-      SlavePools.module_eval %Q{
+      SlavePoolsModule.module_eval %Q{
         class #{pool_name.camelize}#{slave_name.camelize} < ActiveRecord::Base
           self.abstract_class = true
           establish_connection :#{full_db_name}
         end
       }, __FILE__, __LINE__
-      slave_pools[pool_name] << "SlavePools::#{pool_name.camelize}#{slave_name.camelize}".constantize
+      slave_pools[pool_name] << "SlavePoolsModule::#{pool_name.camelize}#{slave_name.camelize}".constantize
       return slave_pools
     end
     
