@@ -1,0 +1,7 @@
+# require 'tlattr_accessors'
+require 'slave_pools/slave_pool'
+require 'slave_pools/active_record_extensions'
+# require 'slave_pools/action_controller_extensions'
+require 'slave_pools/observer_extensions'
+require 'slave_pools/query_cache_compat'
+require 'slave_pools/connection_proxy'

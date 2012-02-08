@@ -1,0 +1,226 @@
+= SlavePools
+
+=====-- The SlavePools GEM started as a fork of Maximilian Sch\303\266fmann's https://github.com/schoefmax/multi_db
+=====-- The MultiDB gem was inspired by Rick Olson's "masochism"-Plugin
+
+SlavePools uses a connection proxy, which sends read queries to slave databases,
+and all write queries to the master database (Read/Write Split). You can specify
+"pools" of slave DB's to use for sections of your traffic (e.g. seperating admin and user traffic)
+Within transactions, while executing ActiveRecord Observers and
+within "with_master" blocks (see below), even read queries are sent to the 
+master database. You can specify which pool to use in a "with_pool" block
+
+Each slave in a pool is used until a next_reader! method is called
+
+* works with activerecord 3.0 (not tested with Rails 2)
+
+=== Install
+
+Add to your Gemfile
+
+  gem 'slave_pools'
+
+=== Setup
+
+In your database.yml, add sections for the slaves, e.g.:
+
+  development: # that would be the master
+    adapter: mysql
+    database: myapp_production
+    username: root
+    password: 
+    host: localhost
+
+  development_pool_default_name_slave1: # that would be a slave named 'slave1' in the 'default' pool
+    adapter: mysql
+    database: slave_db1
+    username: root
+    password: 
+    host: 10.0.0.2
+
+  development_pool_default_name_slave2: # that would be a slave named 'slave2' in the 'default' pool
+    ...
+  development_pool_admin_name_slave1: # that would be a slave named 'slave1' in the 'admin' pool (db names can be reused across pools)
+    ...
+  development_pool_admin_name_another_slave: # that would be a slave named 'another_slave' in the 'admin' pool
+
+*NOTE*: slave_pools identifies slave databases by looking for entries of the form
+"<tt><environment>_pool_<pool_name>_name_<db_name></tt>". 
+
+This creates an abstract classes named <tt>SlavePools::DefaultDb1</tt> for each db of the form <tt>SlavePools::<PoolName><DbName></tt>etc.
+If no slaves are specified, the SlavePools setup does not run, and the development DB would be used as normal.
+
+For development testing, I recommend creating a read-only mysql user and just point all of your slave DB's to the your development DB using the read-only user.
+
+The Default SlavePool will be used for all requests, so you should name on of the pools 'default' (if there isn't a 'default' slave_pool, the first slave_pool specified becomes the default)
+
+To enable the proxy globally, add this to a config/initializers:
+
+  SlavePools::ConnectionProxy.setup!
+
+If you only want to enable it for specific environments, add this to 
+the corresponding file in config/environments:
+
+  config.after_initialize do
+    SlavePools::ConnectionProxy.setup!
+  end
+  
+== Usage
+
+With rails it is helpful to add these controller methods to the application controller (these will probably be folded in the gem, but leaving out for now):
+class ApplicationController < ActionController::Base
+
+  around_filter   :stick_to_master_for_updates 
+  around_filter   :use_master_for_redirect #goes with above
+  after_filter    :switch_to_next_slave
+  
+  def switch_to_next_slave
+    if slaves?
+      ActiveRecord::Base.connection_proxy.next_slave!
+    end
+  end
+  
+  # can be used in 
+  def use_admin_slave_pool
+    if slaves?
+      ActiveRecord::Base.connection_proxy.with_pool('admin') { yield }
+    end
+  end
+  
+  # automatically wrap put/post/delete requests with a with_master block
+  # specify the next request to use the master DB 
+  # (i.e. if you write to the master, you probably want the next read request/redirect to also come from the master)
+  def stick_to_master_for_updates
+    if slaves? && (request.post? || request.put? || request.delete?)
+      ActiveRecord::Base.connection_proxy.with_master { yield }
+      session[:stick_to_master] = 1
+    else
+      yield
+    end
+  end
+  
+  def use_master_for_redirect
+    if slaves? && session[:stick_to_master]
+      session[:stick_to_master] = nil
+      ActiveRecord::Base.connection_proxy.with_master { yield }
+    else
+      yield
+    end
+  end
+  
+  #wrap 'get' requests that edit items with this around_filter
+  def use_master
+    if slaves?
+      ActiveRecord::Base.connection_proxy.with_master { yield }
+      session[:stick_to_master] = 1
+    else
+      yield
+    end
+  end
+  
+  # if this is defined, there are SlavePools in use.
+  def slaves?
+    ActiveRecord::Base.respond_to?('connection_proxy')
+  end
+end
+
+=== Using with Phusion Passenger 
+
+(this is a note from MultiDB gem and has not been verified)
+
+With Passengers smart spawning method, child processes forked by the ApplicationSpawner
+won't have the connection proxy set up properly (this is a note from ).
+
+To make it work, add this to your <tt>environment.rb</tt> or an initializer script
+(e.g. <tt>config/initializers/connection_proxy.rb</tt>):
+
+  if defined?(PhusionPassenger)
+    PhusionPassenger.on_event(:starting_worker_process) do |forked|
+      if forked
+        # ... set configuration options, if any ...
+        SlavePools::ConnectionProxy.setup!
+      end
+    end
+  else # not using passenger (e.g. development/testing)
+    # ... set configuration options, if any ...
+    SlavePools::ConnectionProxy.setup!
+  end
+
+=== Using with ThinkingSphinx
+
+ThinkingSphinx looks for an adapter type and 
+  SlavePools::ConnectionProxy.setup!
+  
+  if ActiveRecord::Base.respond_to?('connection_proxy')
+    ThinkingSphinx::AbstractAdapter.class_eval do
+      def self.standard_adapter_for_model(model)
+        :mysql
+      end
+    end
+  end
+
+=== Forcing the master for certain actions
+
+Just add this to your controller:
+
+  around_filter(:only => :foo_action) { |c,a| ActiveRecord::Base.connection_proxy.with_master { a.call } }
+
+=== Forcing the master for certain models
+
+In your environment.rb or an initializer, add this *before* the call to <tt>setup!</tt>:
+
+  SlavePools::ConnectionProxy.master_models = ['CGI::Session::ActiveRecordStore::Session', 'PaymentTransaction', ...]
+  SlavePools::ConnectionProxy.setup!
+
+*NOTE*: You cannot safely add more master_models after calling <tt>setup!</tt>.
+=== Features
+* Minimalist implementation - does include sharding, doesn't creation a new adapter (so if you don't specify slaves for 
+  an environment, the connection is not overwritten, and the DB works as normal), doesn't blacklist/remove slaves,
+* It sends everything except "select ..." queries to the master, instead of
+  sending only specific things to the master and anything "else" to the slave.
+  This avoids accidental writes to the master when there are API changes in
+  ActiveRecord which haven't been picked up by multi_db yet.
+  Note that this behavior will also always send helper methods like "+quote+" or
+  "<tt>add_limit!</tt>" to the master connection object, which doesn't add any
+  more load on the master, as these methods don't communicate with the db server
+  itself.
+
+
+=== Differences to "multi_db":
+
+* Supports multiple separate pools of slave databases
+* query caching is fixed
+* tries a slave once and immediately reverts to the master afterwards (does not cycle through slaves)
+* stays with the same slave DB until explicitly told to change. In practical usage, it didn't make sense to us
+  to have it cycle through slaves in the same web request, so I made the 'sticky slave' feature permanent
+* removed weighted slave rotation for now (didn't need it)
+* Currently not using Threaded variables (left this commented out in the code for now, may revisit)
+* Added with_pool method
+* does not blacklist slaves for timing out (we want other more robust monitoring software to take care of this)
+* better default case handling - if no slave DB's are specified, the regular Environment database is used, and the gem is
+  not initialized
+
+=== See also
+
+==== Masochism
+
+The original master/slave plugin:
+
+* http://github.com/technoweenie/masochism
+
+==== MultiDb
+
+The project is based on:
+
+* https://github.com/schoefmax/multi_db
+
+=== Running specs
+
+If you haven't already, install the rspec gem, then create an empty database
+called "test_db". (you might want to tweak the spec/config/database.yml).
+From the plugin directory, run:
+
+  rspec spec
+
+Copyright (c) 2012, Dan Drabik
+Released under the MIT license
