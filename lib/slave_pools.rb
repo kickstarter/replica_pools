@@ -19,7 +19,7 @@ class SlavePools
   end
   
   def self.next_slave!
-    ActiveRecord::Base.connection_proxy.next_slave!
+    ActiveRecord::Base.connection_proxy.next_slave! if active?
   end
   
   def self.with_pool(pool_name)

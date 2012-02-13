@@ -38,11 +38,6 @@ module SlavePoolsModule
       
       #true or false - whether you want to include the ActionController helpers or not
       #this allow
-      # uses a session variable named [:stick_to_master]
-      attr_accessor :controller_helpers
-      
-      #whether or not you want to automatically stick to the master for all put,post,delete calls
-      attr_accessor :master_for_http_update_actions
       
       # if master should be the default db
       attr_accessor :defaults_to_master
@@ -55,8 +50,6 @@ module SlavePoolsModule
       def setup!
         self.master_models ||= DEFAULT_MASTER_MODELS
         self.environment   ||= (defined?(Rails.env) ? Rails.env : 'development')    
-        self.master_for_http_update_actions ||= false
-        self.controller_helpers ||=false
         
         slave_pools = init_slave_pools
         # if there are no slave pools, we just want to silently exit and not edit the ActiveRecord::Base.connection
