@@ -4,7 +4,6 @@ module SlavePoolsModule
   class ConnectionProxy
     include ActiveRecord::ConnectionAdapters::QueryCache
     include QueryCacheCompat
-    #extend ThreadLocalAccessors
     
     # Safe methods are those that should either go to the slave ONLY or go
     # to the current active connection.
@@ -19,7 +18,6 @@ module SlavePoolsModule
     end
 
     attr_accessor :master
-    #tlattr_accessor :master_depth, :current, :current_pool, true
     attr_accessor :master_depth, :current, :current_pool
     
     
@@ -115,51 +113,37 @@ module SlavePoolsModule
     end
 
     def slave
-      # self.current_pool.current
       @current_pool.current
     end
     
     def with_pool(pool_name)
       pool_name = pool_name.class == Symbol ? pool_name : pool_name.to_sym
-      # self.current_pool = @slave_pools[pool_name.to_sym] || default_pool
-      # self.current = slave unless within_master_block?
       @current_pool = @slave_pools[pool_name.to_sym] || default_pool
       @current = slave unless within_master_block?
       yield
     ensure
-      # self.current_pool = default_pool
-      # self.current = slave unless within_master_block?
       @current_pool = default_pool
       @current = slave unless within_master_block?
     end
     
     def with_master
-      # self.current = @master
-      # self.master_depth += 1
       @current = @master
       @master_depth += 1
       yield
     ensure
-      # self.master_depth -= 1
-      # self.current = slave if !within_master_block?
       @master_depth -= 1
       @current = slave if !within_master_block?
     end
     
     def within_master_block?
-      # master_depth > 0
       @master_depth > 0
     end
   
     def with_slave
-      # self.current = slave
-      # self.master_depth -= 1
       @current = slave
       @master_depth -= 1
       yield
     ensure
-      # self.master_depth += 1
-      # self.current = @master if within_master_block?
       @master_depth += 1
       @current = @master if within_master_block?
     end
@@ -180,10 +164,8 @@ module SlavePoolsModule
     # Fails over to the master database if all slaves are unavailable.
     def next_slave!
       return if  within_master_block?  # don't if in with_master block
-      # self.current = self.current_pool.next
       @current = @current_pool.next
     rescue
-      # self.current = @master
       @current = @master
     end
 
@@ -210,8 +192,6 @@ module SlavePoolsModule
     
     def send_to_current(method, *args, &block)
       reconnect_master! if @reconnect && master?
-      # logger.info "[SlavePools] Using #{current.name}"
-      # current.retrieve_connection.send(method, *args, &block)
       logger.info "[SlavePools] Using #{@current.name}"
       @current.retrieve_connection.send(method, *args, &block)
     rescue NotImplementedError, NoMethodError

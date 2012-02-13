@@ -18,21 +18,6 @@ describe SlavePoolsModule::SlavePool do
       end
       @slave_pool.next.should == first
     end
-    
-    #removing threading for now
-    # describe '(accessed from multiple threads)' do
-    # 
-    #   it '#current and #next should return the same item for the same thread' do
-    #     @slave_pool.current.should == "db1"
-    #     @slave_pool.next.should == "db2"
-    #     Thread.new do
-    #       @slave_pool.current.should == "db1"
-    #       @slave_pool.next.should == "db2"
-    #     end.join
-    #     @slave_pool.next.should == "db3"
-    #   end
-    # 
-    # end
   end
   
   context "Single Slave" do

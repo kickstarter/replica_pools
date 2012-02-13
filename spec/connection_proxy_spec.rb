@@ -187,60 +187,6 @@ describe SlavePools do
       foo.bar.should == 'baz'
     end
     
-    ## Removing threading for now
-    
-    # describe '(accessed from multiple threads)' do
-    #   # NOTE: We cannot put expectations on the connection objects itself
-    #   #       for the threading specs, as connection pooling will cause
-    #   #       different connections being returned for different threads.
-    # 
-    #   it '#current and #next_slave! should be local to the thread' do
-    #     @proxy.current.should == SlavePools::DefaultDb2
-    #     @proxy.next_slave!.should == SlavePools::DefaultDb1
-    #     Thread.new do
-    #       @proxy.current.should == SlavePools::DefaultDb2
-    #       @proxy.next_slave!.should == SlavePools::DefaultDb1
-    #       @proxy.current.should == SlavePools::DefaultDb1
-    #       @proxy.next_slave!.should == SlavePools::DefaultDb2
-    #       @proxy.current.should == SlavePools::DefaultDb2
-    #     end
-    #     @proxy.current.should == SlavePools::DefaultDb1
-    #   end
-    # 
-    #   it '#with_master should be local to the thread' do
-    #     @proxy.current.should_not == @proxy.master
-    #     @proxy.with_master do
-    #       @proxy.current.should == @proxy.master
-    #       Thread.new do
-    #         @proxy.current.should_not == @proxy.master
-    #         @proxy.with_master do
-    #           @proxy.current.should == @proxy.master
-    #         end
-    #         @proxy.current.should_not == @proxy.master
-    #       end
-    #       @proxy.current.should == @proxy.master
-    #     end
-    #     @proxy.current.should_not == @proxy.master
-    #   end
-    # 
-    #   it 'should switch to the next reader even whithin with_master-block in different threads' do
-    #     # Because of connection pooling in AR 2.2, the second thread will cause
-    #     # a new connection being created behind the scenes. We therefore just test
-    #     # that these connections are being retrieved for the right databases here.
-    #     @proxy.master.should_not_receive(:retrieve_connection).and_return(@master)
-    #     SlavePools::DefaultDb2.should_receive(:retrieve_connection).twice.and_return(@default_slave2)
-    #     SlavePools::DefaultDb1.should_receive(:retrieve_connection).once.and_return(@default_slave1)
-    #     @proxy.with_master do
-    #       Thread.new do
-    #         3.times do
-    #           @proxy.select_one(@sql)
-    #           @proxy.next_slave!
-    #         end
-    #       end.join
-    #     end
-    #   end
-    # end
-    
     context "Using with_pool call" do
       
       it "should switch to default pool if an invalid pool is specified" do
@@ -293,8 +239,6 @@ describe SlavePools do
       end
       
       it "should switch to master if with_master is specified in an outer block (with master needs to trump with_pool)" do
-        # @master.should_receive(:select_one).exactly(5)
-        # @default_slave2.should_receive(:select_one).exactly(0)
         @secondary_slave1.should_receive(:select_one).exactly(0)
         @secondary_slave2.should_receive(:select_one).exactly(0)
         @secondary_slave3.should_receive(:select_one).exactly(0)
