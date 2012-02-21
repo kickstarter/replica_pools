@@ -8,9 +8,13 @@ module SlavePoolsModule
         send_to_current(:select_all, *a, &b)
       end
     end
-    # def columns(*a, &b)
-    #   send_to_current(:columns, *a, &b)
-    # end
+    def columns(*a, &b)
+      if @query_cache_enabled
+        cache_sql(a.first) {send_to_current(:columns, *a, &b)}
+      else
+        send_to_current(:columns, *a, &b)
+      end
+    end
     def insert(*a, &b)
       clear_query_cache if @query_cache_enabled
       send_to_master(:insert, *a, &b)

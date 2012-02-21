@@ -31,4 +31,8 @@ class SlavePools
   def self.with_slave
     ActiveRecord::Base.connection_proxy.with_slave { yield }
   end
+  
+  def self.current
+    ActiveRecord::Base.connection_proxy.current if active?
+  end
 end

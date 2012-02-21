@@ -10,7 +10,7 @@ Gem::Specification.new do |s|
   s.description = "Connection proxy for ActiveRecord for single master / multiple slave database groups"
   s.email = "dan@kickstarter.com"
   s.extra_rdoc_files = ["LICENSE", "README.rdoc"]
-  s.files = ["lib/slave_pools.rb", "lib/slave_pools/active_record_extensions.rb", "lib/slave_pools/connection_proxy.rb", "lib/slave_pools/observer_extensions.rb", "lib/slave_pools/query_cache_compat.rb", "lib/slave_pools/slave_pool.rb", "LICENSE", "README.rdoc", "spec/config/database.yml", "spec/connection_proxy_spec.rb", "spec/slave_pool_spec.rb", "spec/spec_helper.rb", "slave_pools.gemspec"]
+  s.files = ["lib/slave_pools.rb", "lib/slave_pools/active_record_extensions.rb", "lib/slave_pools/connection_proxy.rb", "lib/slave_pools/observer_extensions.rb", "lib/slave_pools/query_cache_compat.rb", "lib/slave_pools/slave_pool.rb", "LICENSE", "README.rdoc", "spec/config/database.yml", "spec/connection_proxy_spec.rb", "spec/slave_pool_spec.rb","spec/slave_pools_spec.rb", "spec/spec_helper.rb", "slave_pools.gemspec"]
   s.has_rdoc = true
   s.homepage = "https://github.com/kickstarter/slave_pools"
   s.rdoc_options = ["--line-numbers", "--inline-source", "--title", "slave_pools", "--main", "README.rdoc"]

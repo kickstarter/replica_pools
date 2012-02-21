@@ -251,11 +251,7 @@ describe SlavePools do
           end
         end
       end
-      
-      
     end
-
-  end # with normal scheduler
-
+  end
 end
 

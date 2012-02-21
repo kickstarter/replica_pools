@@ -12,6 +12,11 @@ describe SlavePools do
     it "should not error out if next slave is called and SlavePools is not set up" do
       SlavePools.should_receive(:active?).and_return(false)
       SlavePools.next_slave!.should be_nil
+    end
+    
+    it "should not error out if current is called and SlavePools is not set up" do
+      SlavePools.should_receive(:active?).and_return(false)
+      SlavePools.current.should be_nil
     end    
   end
   
@@ -44,6 +49,11 @@ describe SlavePools do
     it 'should send with_slave call to connection proxy' do
       @proxy.should_receive(:with_slave).exactly(1)
       SlavePools.with_slave
+    end
+    
+    it 'should send current call to connection proxy' do
+      @proxy.should_receive(:current).exactly(1)
+      SlavePools.current
     end
 
   end
