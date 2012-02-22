@@ -89,16 +89,11 @@ module SlavePoolsModule
       @config = master.connection.instance_variable_get(:@config)
       @reconnect = false
       @query_cache = {}
-      # self.current_pool = default_pool
       @current_pool = default_pool
       if self.class.defaults_to_master
-        # self.current = @master
-        # self.master_depth = 1
         @current = @master
         @master_depth = 1
       else
-        # self.current = slave
-        # self.master_depth = 0
         @current = slave
         @master_depth = 0
       end
@@ -219,7 +214,6 @@ module SlavePoolsModule
     end
     
     def master?
-      # current == @master
       @current == @master
     end
         
