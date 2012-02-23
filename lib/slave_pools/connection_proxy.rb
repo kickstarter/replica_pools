@@ -187,7 +187,7 @@ module SlavePoolsModule
     
     def send_to_current(method, *args, &block)
       reconnect_master! if @reconnect && master?
-      logger.debug "[SlavePools] Using #{@current.name}"
+      # logger.debug "[SlavePools] Using #{@current.name}"
       @current.retrieve_connection.send(method, *args, &block)
     rescue NotImplementedError, NoMethodError
       raise
