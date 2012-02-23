@@ -246,5 +246,6 @@ From the plugin directory, run:
 
   rspec spec
 
-Copyright (c) 2012, Dan Drabik
+Author: Dan Drabik
+Copyright (c) 2012, Kickstarter
 Released under the MIT license
