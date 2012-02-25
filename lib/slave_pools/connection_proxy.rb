@@ -40,7 +40,7 @@ module SlavePoolsModule
       # if master should be the default db
       attr_accessor :defaults_to_master
       
-      #setting a config instance variable so that thinking sphinx,and other gems that use the connection.instance_variable_get(:@config), work correctly
+      # #setting a config instance variable so that thinking sphinx,and other gems that use the connection.instance_variable_get(:@config), work correctly
       attr_accessor :config
 
       # Replaces the connection of ActiveRecord::Base with a proxy and
@@ -70,7 +70,7 @@ module SlavePoolsModule
         ActiveRecord::Base.configurations.each do |name, db_config|
           # look for dbs matching the slave_pool format and verify a test connection before adding it to the pools
           if name.to_s =~ /#{self.environment}_pool_(.*)_name_(.*)/ && connection_valid?(db_config)
-            slave_pools = add_to_pool(slave_pools, $1, $2, name)
+            slave_pools = add_to_pool(slave_pools, $1, $2, name, db_config)
           end
         end
         return slave_pools
@@ -86,17 +86,19 @@ module SlavePoolsModule
         @slave_pools[pool_name.to_sym] = SlavePool.new(pool_name, slaves)
       end
       @master    = master
-      @config = master.connection.instance_variable_get(:@config)
       @reconnect = false
       @query_cache = {}
       @current_pool = default_pool
       if self.class.defaults_to_master
         @current = @master
         @master_depth = 1
+        @config = master.connection.instance_variable_get(:@config)
       else
         @current = slave
         @master_depth = 0
+        @config = @current.config_hash #setting this 
       end
+      
     end
     
     def default_pool
@@ -223,12 +225,16 @@ module SlavePoolsModule
     
     private
     
-    def self.add_to_pool(slave_pools, pool_name, slave_name, full_db_name)
+    def self.add_to_pool(slave_pools, pool_name, slave_name, full_db_name, db_config)
       slave_pools[pool_name] ||= []
+      db_config_with_symbols = db_config.inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo}
       SlavePoolsModule.module_eval %Q{
         class #{pool_name.camelize}#{slave_name.camelize} < ActiveRecord::Base
           self.abstract_class = true
           establish_connection :#{full_db_name}
+          def self.config_hash 
+            #{db_config_with_symbols.inspect}
+          end 
         end
       }, __FILE__, __LINE__
       slave_pools[pool_name] << "SlavePoolsModule::#{pool_name.camelize}#{slave_name.camelize}".constantize
