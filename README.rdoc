@@ -240,8 +240,16 @@ The project is based on:
 
 === Running specs
 
-If you haven't already, install the rspec gem, then create an empty database
-called "test_db". (you might want to tweak the spec/config/database.yml).
+If you haven't already, install the rspec gem, then set up your database
+with a test database and a read_only user.
+
+To match spec/config/database.yml, you can:
+
+  mysql>
+    create database test_db;
+    create user 'read_only'@'localhost' identified by 'readme';
+    grant select on db_test.* to 'read_only'@'localhost';
+
 From the plugin directory, run:
 
   rspec spec
