@@ -1,5 +1,6 @@
 require 'rubygems'
 gem 'activerecord', '3.0.10'
+gem 'mysql2', '0.2.18'
 %w[active_record yaml erb rspec logger].each {|lib| require lib}
 
 module Rails
