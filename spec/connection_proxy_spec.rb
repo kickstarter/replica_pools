@@ -22,11 +22,14 @@ describe SlavePools do
       @slave_pool_hash = @proxy.slave_pools
       @slave_pool_array = @slave_pool_hash.values
       @master = @proxy.master.retrieve_connection
-      @default_slave1 = SlavePoolsModule::DefaultDb1.retrieve_connection
-      @default_slave2 = SlavePoolsModule::DefaultDb2.retrieve_connection
-      @secondary_slave1 = SlavePoolsModule::SecondaryDb1.retrieve_connection
-      @secondary_slave2 = SlavePoolsModule::SecondaryDb2.retrieve_connection
-      @secondary_slave3 = SlavePoolsModule::SecondaryDb3.retrieve_connection
+      # creates instance variables (@default_slave1, etc.) for each slave based on the order they appear in the slave_pool
+      # ruby 1.8.7 doesn't support ordered hashes, so we assign numbers to the slaves this way, and not the order in the yml file 
+      # to prevent @default_slave1 from being different on different systems
+      ['default', 'secondary'].each do |pool_name|
+        @slave_pool_hash[pool_name.to_sym].slaves.each_with_index do |slave, i|
+          instance_variable_set("@#{pool_name}_slave#{i + 1}", slave.retrieve_connection)
+        end
+      end
     end
   
     it 'AR::B should respond to #connection_proxy' do
@@ -71,14 +74,14 @@ describe SlavePools do
     
     it 'should perform transactions on the master' do
       @master.should_receive(:select_all).exactly(5)
-      @default_slave2.should_receive(:select_all).exactly(0)
+      @default_slave1.should_receive(:select_all).exactly(0)
       ActiveRecord::Base.transaction do
         5.times {@proxy.select_all(@sql)}
       end
     end
   
     it 'should perform transactions on the master, and selects outside of transaction on the slave' do
-      @default_slave2.should_receive(:select_all).exactly(2) # before and after the transaction go to slaves
+      @default_slave1.should_receive(:select_all).exactly(2) # before and after the transaction go to slaves
       @master.should_receive(:select_all).exactly(5)
       @proxy.select_all(@sql)
       ActiveRecord::Base.transaction do
@@ -88,16 +91,14 @@ describe SlavePools do
     end
   
     it 'should not switch to the next reader on selects' do
-      @slave_pool_hash[:default].slaves.first.should == SlavePoolsModule::DefaultDb2 #the unordered hash puts db2 first
-      @default_slave2.should_receive(:select_one).exactly(6)
-      @default_slave1.should_receive(:select_one).exactly(0)
+      @default_slave1.should_receive(:select_one).exactly(6)
+      @default_slave2.should_receive(:select_one).exactly(0)
       6.times { @proxy.select_one(@sql) }
     end
     
     it '#next_slave! should switch to the next slave' do
-      @slave_pool_hash[:default].slaves.first.should == SlavePoolsModule::DefaultDb2 #the unordered hash puts db2 first
-      @default_slave2.should_receive(:select_one).exactly(3)
-      @default_slave1.should_receive(:select_one).exactly(7)
+      @default_slave1.should_receive(:select_one).exactly(3)
+      @default_slave2.should_receive(:select_one).exactly(7)
       3.times { @proxy.select_one(@sql) }
       @proxy.next_slave!
       7.times { @proxy.select_one(@sql) }
@@ -139,8 +140,8 @@ describe SlavePools do
     it 'should cache queries using select_all' do
       ActiveRecord::Base.cache do
         # next_slave will be called and switch to the SlaveDatabase2
-        @default_slave2.should_receive(:select_all).exactly(1)
-        @default_slave1.should_not_receive(:select_all)
+        @default_slave1.should_receive(:select_all).exactly(1)
+        @default_slave2.should_not_receive(:select_all)
         @master.should_not_receive(:select_all)
         3.times { @proxy.select_all(@sql) }
       end
@@ -152,8 +153,8 @@ describe SlavePools do
         meths.each do |meth|
           @master.should_receive(meth).and_return(true)
         end
-        @default_slave2.should_receive(:select_all).exactly(5)
-        @default_slave1.should_receive(:select_all).exactly(0)
+        @default_slave1.should_receive(:select_all).exactly(5)
+        @default_slave2.should_receive(:select_all).exactly(0)
         5.times do |i|
           @proxy.select_all(@sql)
           @proxy.select_all(@sql)
@@ -163,8 +164,8 @@ describe SlavePools do
     end
   
     it 'should try a slave once and fall back to the master (should not retry other slaves)' do
-      @default_slave2.should_receive(:select_all).once.and_raise(RuntimeError)
-      @default_slave1.should_not_receive(:select_all)
+      @default_slave1.should_receive(:select_all).once.and_raise(RuntimeError)
+      @default_slave2.should_not_receive(:select_all)
       @master.should_receive(:select_all).and_return(true)
       @proxy.select_all(@sql)
     end
@@ -190,7 +191,7 @@ describe SlavePools do
     context "Using with_pool call" do
       
       it "should switch to default pool if an invalid pool is specified" do
-        @default_slave2.should_receive(:select_one).exactly(3)
+        @default_slave1.should_receive(:select_one).exactly(3)
         @secondary_slave1.should_not_receive(:select_one)
         @secondary_slave2.should_not_receive(:select_one)
         @secondary_slave3.should_not_receive(:select_one)
@@ -200,7 +201,7 @@ describe SlavePools do
       end
       
       it "should use a different pool if specified" do
-        @default_slave2.should_not_receive(:select_one)
+        @default_slave1.should_not_receive(:select_one)
         @secondary_slave1.should_receive(:select_one).exactly(3)
         @secondary_slave2.should_not_receive(:select_one)
         @secondary_slave3.should_not_receive(:select_one)
@@ -210,7 +211,7 @@ describe SlavePools do
       end
       
       it "should different pool should use next_slave! to advance to the next DB" do
-        @default_slave2.should_not_receive(:select_one)
+        @default_slave1.should_not_receive(:select_one)
         @secondary_slave1.should_receive(:select_one).exactly(2)
         @secondary_slave2.should_receive(:select_one).exactly(1)
         @secondary_slave3.should_receive(:select_one).exactly(1)
@@ -224,7 +225,7 @@ describe SlavePools do
       
       it "should switch to master if with_master is specified in an inner block" do
         @master.should_receive(:select_one).exactly(5)
-        @default_slave2.should_receive(:select_one).exactly(0)
+        @default_slave1.should_receive(:select_one).exactly(0)
         @secondary_slave1.should_receive(:select_one).exactly(0)
         @secondary_slave2.should_receive(:select_one).exactly(0)
         @secondary_slave3.should_receive(:select_one).exactly(0)
