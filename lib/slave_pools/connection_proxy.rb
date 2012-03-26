@@ -87,7 +87,7 @@ module SlavePoolsModule
       end
       @master    = master
       @reconnect = false
-      @query_cache = {}
+      @query_cache = Hash.new { |h,sql| h[sql] = {} }
       @current_pool = default_pool
       if self.class.defaults_to_master
         @current = @master
@@ -114,7 +114,6 @@ module SlavePoolsModule
     end
     
     def with_pool(pool_name)
-      pool_name = pool_name.class == Symbol ? pool_name : pool_name.to_sym
       @current_pool = @slave_pools[pool_name.to_sym] || default_pool
       @current = slave unless within_master_block?
       yield
@@ -160,7 +159,7 @@ module SlavePoolsModule
     # Switches to the next slave database for read operations.
     # Fails over to the master database if all slaves are unavailable.
     def next_slave!
-      return if  within_master_block?  # don't if in with_master block
+      return if within_master_block? # don't if in with_master block
       @current = @current_pool.next
     rescue
       @current = @master

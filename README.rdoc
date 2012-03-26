@@ -94,7 +94,7 @@ For other cases where you use the master for writes, you should wrap the request
     end
   end
 
-* works with activerecord 3.0 (not tested with Rails 2)
+* works with activerecord 3.2.2 (not tested with Rails 2)
 
 === Install
 

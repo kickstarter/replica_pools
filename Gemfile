@@ -1,5 +1,5 @@
 source "http://rubygems.org"
 
 gemspec
-gem 'activerecord', '= 3.0.12'
-gem 'mysql2', '~> 0.2.18'
+gem 'activerecord', '= 3.2.2'
+gem 'mysql2', '~> 0.3.11'

@@ -1,10 +1,10 @@
 module SlavePoolsModule
   # Implements the methods expected by the QueryCache module
   module QueryCacheCompat
-    
+
     def select_all(*a, &b)
       if @query_cache_enabled
-        cache_sql(a.first) {send_to_current(:select_all, *a, &b)}
+        cache_sql(a.first, a.last) {send_to_current(:select_all, *a, &b)}
       else
         send_to_current(:select_all, *a, &b)
       end
@@ -12,7 +12,7 @@ module SlavePoolsModule
     
     def columns(*a, &b)
       if @query_cache_enabled
-        cache_sql(a.first) {send_to_current(:columns, *a, &b)}
+        cache_sql(a.first, a.last) {send_to_current(:columns, *a, &b)}
       else
         send_to_current(:columns, *a, &b)
       end
