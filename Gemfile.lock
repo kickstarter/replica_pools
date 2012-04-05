@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     slave_pools (0.1.0)
-      activerecord (= 3.2.2)
+      activerecord (~> 3.2.2)
 
 GEM
   remote: http://rubygems.org/
@@ -29,6 +29,6 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  activerecord (= 3.2.2)
+  activerecord (~> 3.2.2)
   mysql2 (~> 0.3.11)
   slave_pools!
