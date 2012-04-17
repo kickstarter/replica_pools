@@ -75,7 +75,7 @@ describe SlavePools do
     it 'should perform transactions on the master' do
       @master.should_receive(:select_all).exactly(5)
       @default_slave1.should_receive(:select_all).exactly(0)
-      ActiveRecord::Base.transaction do
+      ActiveRecord::Base.transaction({}) do
         5.times {@proxy.select_all(@sql)}
       end
     end
