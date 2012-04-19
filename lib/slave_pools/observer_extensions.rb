@@ -5,13 +5,14 @@ module SlavePoolsModule
     end
     
     # Send observed_method(object) if the method exists.
-    def update_with_masterdb(observed_method, object) #:nodoc:
+    # currently replicating the update method instead of using the aliased method call to update_without_master
+    def update_with_masterdb(observed_method, object, &block) #:nodoc:
       if object.class.connection.respond_to?(:with_master)
         object.class.connection.with_master do
-          update_without_masterdb(observed_method, object)
+          send(observed_method, object, &block) if respond_to?(observed_method) && !disabled_for?(object)
         end
       else
-        update_without_masterdb(observed_method, object)
+        send(observed_method, object, &block) if respond_to?(observed_method) && !disabled_for?(object)
       end
     end
   end

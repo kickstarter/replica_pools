@@ -3,7 +3,7 @@ require SLAVE_POOLS_SPEC_DIR + '/../lib/slave_pools'
 
 describe SlavePools do
 
-  before(:all) do
+  before(:each) do
     ActiveRecord::Base.configurations = SLAVE_POOLS_SPEC_CONFIG
     ActiveRecord::Base.establish_connection :test
     ActiveRecord::Migration.verbose = false
