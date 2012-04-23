@@ -21,7 +21,11 @@ class SlavePools
   end
   
   def self.with_pool(pool_name)
-    ActiveRecord::Base.connection_proxy.with_pool(pool_name) { yield }
+    if active?
+      ActiveRecord::Base.connection_proxy.with_pool(pool_name) { yield }
+    else
+      yield
+    end
   end
   
   def self.with_master

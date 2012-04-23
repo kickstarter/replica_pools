@@ -17,6 +17,12 @@ describe SlavePools do
     it "should not error out if current is called and SlavePools is not set up" do
       SlavePools.should_receive(:active?).and_return(false)
       SlavePools.current.should be_nil
+    end
+    
+    it "should should yield on a with_pool call if slave_pools is not active" do
+      SlavePools.should_receive(:active?).and_return(false)
+      SlavePools.with_pool('admin') {@a = 5}
+      @a.should == 5
     end    
   end
   
