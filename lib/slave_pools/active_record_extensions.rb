@@ -26,15 +26,6 @@ module SlavePoolsModule
         end
       end
 
-      # make caching always use the ConnectionProxy
-      def cache(&block)
-        if ActiveRecord::Base.configurations.blank?
-          yield
-        else
-          self.connection_proxy.cache(&block)
-        end
-      end
-
       def inherited(child)
         super
         child.hijack_connection

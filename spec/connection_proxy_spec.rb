@@ -144,6 +144,7 @@ describe SlavePools do
         @default_slave2.should_not_receive(:select_all)
         @master.should_not_receive(:select_all)
         3.times { @proxy.select_all(@sql) }
+        @master.query_cache.keys.size.should == 1
       end
     end
 
@@ -158,7 +159,9 @@ describe SlavePools do
         5.times do |i|
           @proxy.select_all(@sql)
           @proxy.select_all(@sql)
+          @master.query_cache.keys.size.should == 1
           @proxy.send(meths[i])
+          @master.query_cache.keys.size.should == 0
         end
       end
     end
@@ -174,6 +177,7 @@ describe SlavePools do
           3.times { @proxy.select_all(@sql) }
           @proxy.next_slave!
           3.times { @proxy.select_all(@sql)}
+          @master.query_cache.keys.size.should == 1
         }
         mw.call({})
       end
@@ -189,7 +193,9 @@ describe SlavePools do
           5.times do |i|
             @proxy.select_all(@sql)
             @proxy.select_all(@sql)
+            @master.query_cache.keys.size.should == 1
             @proxy.send(meths[i])
+            @master.query_cache.keys.size.should == 0
           end
         }
         mw.call({})

@@ -87,7 +87,6 @@ module SlavePoolsModule
       end
       @master    = master
       @reconnect = false
-      @query_cache = Hash.new { |h,sql| h[sql] = {} }
       @current_pool = default_pool
       if self.class.defaults_to_master
         @current = @master

@@ -9,24 +9,24 @@ module SlavePoolsModule
         # +select_all+ and then +to_sql+ aren't called redundantly.
         arel, name, binds = a
         sql = to_sql(arel, binds)
-        cache_sql(sql, binds) {send_to_current(:select_all, *[sql, name, binds], &b)}
+        @master.connection.send(:cache_sql, sql, binds) {send_to_current(:select_all, *[sql, name, binds], &b)}
       else
         send_to_current(:select_all, *a, &b)
       end
     end
 
     def insert(*a, &b)
-      clear_query_cache if query_cache_enabled
+      @master.connection.clear_query_cache if query_cache_enabled
       send_to_master(:insert, *a, &b)
     end
     
     def update(*a, &b)
-      clear_query_cache if query_cache_enabled
+      @master.connection.clear_query_cache if query_cache_enabled
       send_to_master(:update, *a, &b)
     end
     
     def delete(*a, &b)
-      clear_query_cache if query_cache_enabled
+      @master.connection.clear_query_cache if query_cache_enabled
       send_to_master(:delete, *a, &b)
     end
 
@@ -37,9 +37,9 @@ module SlavePoolsModule
     #     @query_cache_enabled directly on ActiveRecord::Base.connection 
     #     (which could be master at that point)
     # 
-    # :`( Thusly, we have to check for both.
+    # :`( So, let's just use the master connection for all query cacheing.
     def query_cache_enabled
-     @query_cache_enabled || @master.connection.query_cache_enabled
+      @master.connection.query_cache_enabled
     end
   end
 end
