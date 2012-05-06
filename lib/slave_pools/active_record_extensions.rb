@@ -26,6 +26,15 @@ module SlavePoolsModule
         end
       end
 
+      # Make sure caching always uses master connection
+      def cache(&block)
+        if ActiveRecord::Base.configurations.blank?
+          yield
+        else
+          ActiveRecord::Base.connection.cache(&block)
+        end
+      end
+
       def inherited(child)
         super
         child.hijack_connection
