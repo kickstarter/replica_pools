@@ -6,6 +6,7 @@ describe SlavePools do
   before(:all) do
     ActiveRecord::Base.configurations = SLAVE_POOLS_SPEC_CONFIG
     ActiveRecord::Base.establish_connection :test
+    @sql = 'SELECT NOW()'
   end
   
   context "with no setup" do
@@ -17,7 +18,19 @@ describe SlavePools do
     it "should not error out if current is called and SlavePools is not set up" do
       SlavePools.should_receive(:active?).and_return(false)
       SlavePools.current.should be_nil
-    end    
+    end
+    
+    it "should yield on a with_pool call if slave_pools is not active" do
+      SlavePools.should_receive(:active?).and_return(false)
+      ActiveRecord::Base.connection.should_receive(:execute)
+      SlavePools.with_pool('admin') {ActiveRecord::Base.connection.execute(@sql)}
+    end
+
+    it "should yield on a with_master call if slave_pools is not active" do
+      SlavePools.should_receive(:active?).and_return(false)
+      ActiveRecord::Base.connection.should_receive(:execute)
+      SlavePools.with_master {ActiveRecord::Base.connection.execute(@sql)}
+    end
   end
   
   describe "Slave Pool Wrapper calls" do

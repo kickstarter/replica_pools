@@ -112,7 +112,7 @@ module SlavePoolsModule
       @current_pool.current
     end
     
-    def with_pool(pool_name)
+    def with_pool(pool_name = 'default')
       @current_pool = @slave_pools[pool_name.to_sym] || default_pool
       @current = slave unless within_master_block?
       yield
