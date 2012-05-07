@@ -11,7 +11,7 @@ describe SlavePools do
     class MasterModel < ActiveRecord::Base; end
     ActiveRecord::Migration.create_table(:foo_models, :force => true) {|t| t.string :bar}
     class FooModel < ActiveRecord::Base; end
-    @sql = 'SELECT 1+1 FROM DUAL'
+    @sql = 'SELECT NOW()'
   end
   
   describe "standard setup" do
@@ -200,6 +200,13 @@ describe SlavePools do
         end
       end
       
+      it "should switch to default pool if an no pool is specified" do
+        @default_slave1.should_receive(:select_one).exactly(1)
+        @proxy.with_pool do
+          @proxy.select_one(@sql)
+        end
+      end
+
       it "should use a different pool if specified" do
         @default_slave1.should_not_receive(:select_one)
         @secondary_slave1.should_receive(:select_one).exactly(3)
