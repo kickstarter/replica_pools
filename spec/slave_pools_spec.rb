@@ -58,12 +58,7 @@ describe SlavePools do
       @proxy.should_receive(:with_master).exactly(1)
       SlavePools.with_master
     end
-    
-    it 'should send with_slave call to connection proxy' do
-      @proxy.should_receive(:with_slave).exactly(1)
-      SlavePools.with_slave
-    end
-    
+
     it 'should send current call to connection proxy' do
       @proxy.should_receive(:current).exactly(1)
       SlavePools.current

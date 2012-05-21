@@ -127,22 +127,14 @@ module SlavePoolsModule
       yield
     ensure
       @master_depth -= 1
+      @master_depth = 0 if @master_depth < 0 # ensure that master depth never gets below 0
       @current = slave if !within_master_block?
     end
     
     def within_master_block?
       @master_depth > 0
     end
-  
-    def with_slave
-      @current = slave
-      @master_depth -= 1
-      yield
-    ensure
-      @master_depth += 1
-      @current = @master if within_master_block?
-    end
-    
+
     def transaction(start_db_transaction = true, &block)
       with_master { @master.retrieve_connection.transaction(start_db_transaction, &block) }
     end
@@ -164,7 +156,7 @@ module SlavePoolsModule
       @current = @master
     end
 
-    protected
+   protected
 
     def create_delegation_method!(method)
       self.instance_eval %Q{
@@ -188,6 +180,7 @@ module SlavePoolsModule
     def send_to_current(method, *args, &block)
       reconnect_master! if @reconnect && master?
       # logger.debug "[SlavePools] Using #{@current.name}"
+      @current = @master if unsafe?(method) #failsafe to avoid sending dangerous method to master
       @current.retrieve_connection.send(method, *args, &block)
     rescue NotImplementedError, NoMethodError
       raise
@@ -239,8 +232,7 @@ module SlavePoolsModule
       return slave_pools
     end
     
-    #new method to verify whether DB connection is active?
-    # not working properly yet, causes issues
+    # method to verify whether DB connection is active?
     def self.connection_valid?(db_config = nil)
       is_connected = false
       if db_config
