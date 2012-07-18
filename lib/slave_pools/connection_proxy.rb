@@ -174,6 +174,7 @@ module SlavePoolsModule
       reconnect_master! if @reconnect
       @master.retrieve_connection.send(method, *args, &block)
     rescue => e
+      log_errors(e, 'send_to_master', method)
       raise_master_error(e)
     end
     
@@ -185,6 +186,7 @@ module SlavePoolsModule
     rescue NotImplementedError, NoMethodError
       raise
     rescue => e # TODO don't rescue everything
+      log_errors(e, 'send_to_current', method)
       raise_master_error(e) if master?
       logger.warn "[SlavePools] Error reading from slave database"
       logger.error %(#{e.message}\n#{e.backtrace.join("\n")})
@@ -241,11 +243,33 @@ module SlavePoolsModule
           ActiveRecord::Base.connection
           is_connected = ActiveRecord::Base.connected?
           ActiveRecord::Base.establish_connection(environment) #rollback to the current environment to avoid issues
-        rescue
+        rescue => e
+          log_errors(e, 'self.connection_valid?')
         end
       end
       return is_connected
     end
 
+    # logging instance errors
+    def log_errors(error, sp_method, db_method)
+      logger.error "[SlavePools] - Error: #{error}"
+      logger.error "[SlavePools] - SlavePool Method: #{sp_method}"
+      logger.error "[SlavePools] - Master Value: #{@master}"
+      logger.error "[SlavePools] - Master Depth: #{@master_depth}"
+      logger.error "[SlavePools] - Current Value: #{@current}"
+      logger.error "[SlavePools] - Current Pool: #{@current_pool}"
+      logger.error "[SlavePools] - Current Pool Slaves: #{@current_pool.slaves}"
+      logger.error "[SlavePools] - Current Pool Name: #{@current_pool.name}"
+      logger.error "[SlavePools] - Reconnect Value: #{@reconnect}"
+      logger.error "[SlavePools] - Default Pool: #{default_pool}"
+      logger.error "[SlavePools] - DB Method: #{db_method}"
+    end
+
+    # logging class errors
+    def self.log_errors(error, sp_method)
+      logger = ActiveRecord::Base.logger
+      logger.error "[SlavePools] - Error: #{error}"
+      logger.error "[SlavePools] - SlavePool Method: #{sp_method}"
+    end
   end
 end
