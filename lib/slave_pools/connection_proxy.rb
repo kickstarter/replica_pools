@@ -258,8 +258,8 @@ module SlavePoolsModule
       logger.error "[SlavePools] - Master Depth: #{@master_depth}"
       logger.error "[SlavePools] - Current Value: #{@current}"
       logger.error "[SlavePools] - Current Pool: #{@current_pool}"
-      logger.error "[SlavePools] - Current Pool Slaves: #{@current_pool.slaves}"
-      logger.error "[SlavePools] - Current Pool Name: #{@current_pool.name}"
+      logger.error "[SlavePools] - Current Pool Slaves: #{@current_pool.slaves}" if @current_pool
+      logger.error "[SlavePools] - Current Pool Name: #{@current_pool.name}" if @current_pool
       logger.error "[SlavePools] - Reconnect Value: #{@reconnect}"
       logger.error "[SlavePools] - Default Pool: #{default_pool}"
       logger.error "[SlavePools] - DB Method: #{db_method}"
