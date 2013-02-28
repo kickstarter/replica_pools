@@ -19,24 +19,24 @@ module SlavePoolsModule
       @master.connection.clear_query_cache if query_cache_enabled
       send_to_master(:insert, *a, &b)
     end
-    
+
     def update(*a, &b)
       @master.connection.clear_query_cache if query_cache_enabled
       send_to_master(:update, *a, &b)
     end
-    
+
     def delete(*a, &b)
       @master.connection.clear_query_cache if query_cache_enabled
       send_to_master(:delete, *a, &b)
     end
 
-    # Rails 3.2 changed query cacheing a little and affected slave_pools like this: 
-    # 
+    # Rails 3.2 changed query cacheing a little and affected slave_pools like this:
+    #
     #   * ActiveRecord::Base.cache sets @query_cache_enabled for current connection
-    #   * ActiveRecord::QueryCache middleware (in call()) that Rails uses sets 
-    #     @query_cache_enabled directly on ActiveRecord::Base.connection 
+    #   * ActiveRecord::QueryCache middleware (in call()) that Rails uses sets
+    #     @query_cache_enabled directly on ActiveRecord::Base.connection
     #     (which could be master at that point)
-    # 
+    #
     # :`( So, let's just use the master connection for all query cacheing.
     def query_cache_enabled
       @master.connection.query_cache_enabled

@@ -5,7 +5,7 @@
 SlavePools builds a base layer of master/slave query splitting, by overwriting ActiveRecord's connection (with connection_proxy). With this in place, you can easily add a second layer of traffic splitting, by wrapping requests in the provided helper methods (examples below), and have a manageable master/slave solution for a standard rails application
 
 Overview
-* Sends only whitelisted SELECT-type queries to the Slaves 
+* Sends only whitelisted SELECT-type queries to the Slaves
 * Sends all other queries to the Master
 * Works with query caching and transactions
 * Easy to separate types of read traffic into different collections of slaves (e.g. separating admin and user traffic)
@@ -15,7 +15,7 @@ Overview
   * doesn't weight slave db's
   * Builds onto a standard database.yml file (gem doesn't initialize if no slaves are specified)
   * doesn't switch slaves on its own (the user specifies when to switch in their code)
-  
+
 The SlavePools GEM started as a fork of Maximilian Sch\303\266fmann's https://github.com/schoefmax/multi_db
 The MultiDB gem was inspired by Rick Olson's "masochism"-Plugin
 
@@ -35,14 +35,14 @@ Determine if there are slaves:
 
 The gem, by default, sends writes and reads to the master and slave databases, respectfully. But in your app, if you write to the master during a request, you will probably want to read from the master in that request as well, in case there is replication. You will also probably want to read from the master on the next request (after a write to the master) to cover redirects.
 
-Using a standard rails application setup, you can achieve this by adding these example methods to your application controller (some of these may be folded in the gem, but leaving out for now):  
+Using a standard rails application setup, you can achieve this by adding these example methods to your application controller (some of these may be folded in the gem, but leaving out for now):
 
   class ApplicationController < ActionController::Base
 
-    around_filter   :stick_to_master_for_updates 
+    around_filter   :stick_to_master_for_updates
     around_filter   :use_master_for_redirect #goes with above
     after_filter    :switch_to_next_slave
-  
+
     def switch_to_next_slave
       SlavePools.next_slave! if slaves?
     end
@@ -82,19 +82,19 @@ Using a standard rails application setup, you can achieve this by adding these e
       SlavePools.active?
     end
   end
-  
+
 For other cases where you use the master for writes, you should wrap the request in a 'use_master' block
 
   class PostsController < ApplicationController
     around_filter :use_master, :only=>:index
 
     def index
-      Activity.create() 
+      Activity.create()
       # index is a GET call, but we've decided to record something, so we want to wrap it in a use_master block
     end
   end
 
-* works with activerecord 3.2.2 (not tested with Rails 2)
+* works with activerecord 3.2.12 (not tested with Rails 2)
 
 === Install
 
@@ -113,14 +113,14 @@ In your database.yml, add sections for the slaves, e.g.:
     adapter: mysql
     database: myapp_production
     username: root
-    password: 
+    password:
     host: localhost
 
   development_pool_default_name_slave1: # that would be a slave named 'slave1' in the 'default' pool
     adapter: mysql
     database: slave_db1
     username: root
-    password: 
+    password:
     host: 10.0.0.2
 
   development_pool_default_name_slave2: # that would be a slave named 'slave2' in the 'default' pool
@@ -139,15 +139,15 @@ To enable the proxy globally, add this to a config/initializers:
 
   SlavePools.setup!
 
-If you only want to enable it for specific environments, add this to 
+If you only want to enable it for specific environments, add this to
 the corresponding file in config/environments:
 
   config.after_initialize do
     SlavePools.setup!
   end
-  
 
-=== Using with Phusion Passenger 
+
+=== Using with Phusion Passenger
 
 (this is a note from MultiDB gem and has not been verified)
 
@@ -171,9 +171,9 @@ To make it work, add this to your <tt>environment.rb</tt> or an initializer scri
 
 === Using with ThinkingSphinx
 
-ThinkingSphinx looks for an adapter type and 
+ThinkingSphinx looks for an adapter type and
   SlavePools::ConnectionProxy.setup!
-  
+
   if ActiveRecord::Base.respond_to?('connection_proxy')
     ThinkingSphinx::AbstractAdapter.class_eval do
       def self.standard_adapter_for_model(model)
@@ -197,7 +197,7 @@ In your environment.rb or an initializer, add this *before* the call to <tt>setu
 
 *NOTE*: You cannot safely add more master_models after calling <tt>setup!</tt>.
 === Features
-* Minimalist implementation - does include sharding, doesn't creation a new adapter (so if you don't specify slaves for 
+* Minimalist implementation - does include sharding, doesn't creation a new adapter (so if you don't specify slaves for
   an environment, the connection is not overwritten, and the DB works as normal), doesn't blacklist/remove slaves,
 * It sends everything except "select ..." queries to the master, instead of
   sending only specific things to the master and anything "else" to the slave.
