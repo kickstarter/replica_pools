@@ -3,11 +3,11 @@ module SlavePoolsModule
   module QueryCacheCompat
 
     def select_all(*a, &b)
-      if query_cache_enabled
-        # FIXME this still hits the +select_all+ method in AR connection's 
-        # query_cache.rb. It'd be nice if we could avoid it somehow so 
+      arel, name, binds = a
+      if query_cache_enabled && !locked?(arel)
+        # FIXME this still hits the +select_all+ method in AR connection's
+        # query_cache.rb. It'd be nice if we could avoid it somehow so
         # +select_all+ and then +to_sql+ aren't called redundantly.
-        arel, name, binds = a
         sql = to_sql(arel, binds)
         @master.connection.send(:cache_sql, sql, binds) {send_to_current(:select_all, *[sql, name, binds], &b)}
       else
