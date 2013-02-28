@@ -1,10 +1,10 @@
 login: &login
   adapter: mysql2
   username: root
-  password: 
+  password:
   host: localhost
   encoding: utf8
-  
+
 readonly_login: &readonly_login
   adapter: mysql2
   username: read_only
@@ -15,7 +15,7 @@ readonly_login: &readonly_login
 test:
   database: test_db
   <<: *login
-  
+
 test_pool_secondary_name_db1:
   database: test_db
   <<: *readonly_login
@@ -23,19 +23,19 @@ test_pool_secondary_name_db1:
 test_pool_secondary_name_db2:
   database: test_db
   <<: *readonly_login
-  
+
 test_pool_secondary_name_db3:
   database: test_db
   <<: *readonly_login
-  
+
 test_pool_default_name_db1:
   database: test_db
   <<: *readonly_login
-  
+
 test_pool_default_name_db2:
   database: test_db
   <<: *readonly_login
-  
+
 test_pool_default_name_fake_db:
   database: fake_db_that_doesnt_exist #do not create this db, used to test the connection
   <<: *readonly_login

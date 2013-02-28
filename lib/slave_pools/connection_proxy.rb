@@ -4,10 +4,10 @@ module SlavePoolsModule
   class ConnectionProxy
     include ActiveRecord::ConnectionAdapters::QueryCache
     include QueryCacheCompat
-    
+
     # Safe methods are those that should either go to the slave ONLY or go
     # to the current active connection.
-    SAFE_METHODS = [ :select_all, :select_one, :select_value, :select_values, 
+    SAFE_METHODS = [ :select_all, :select_one, :select_value, :select_values,
       :select_rows, :select, :verify!, :raw_connection, :active?, :reconnect!,
       :disconnect!, :reset_runtime, :log, :log_info ]
 
@@ -19,27 +19,26 @@ module SlavePoolsModule
 
     attr_accessor :master
     attr_accessor :master_depth, :current, :current_pool
-    
-    
+
     class << self
-      
+
       # defaults to Rails.env if multi_db is used with Rails
       # defaults to 'development' when used outside Rails
       attr_accessor :environment
-      
+
       # a list of models that should always go directly to the master
       #
       # Example:
       #
       #  SlavePool::ConnectionProxy.master_models = ['MySessionStore', 'PaymentTransaction']
       attr_accessor :master_models
-      
+
       #true or false - whether you want to include the ActionController helpers or not
       #this allow
-      
+
       # if master should be the default db
       attr_accessor :defaults_to_master
-      
+
       # #setting a config instance variable so that thinking sphinx,and other gems that use the connection.instance_variable_get(:@config), work correctly
       attr_accessor :config
 
@@ -47,24 +46,24 @@ module SlavePoolsModule
       # establishes the connections to the slaves.
       def setup!
         self.master_models ||= DEFAULT_MASTER_MODELS
-        self.environment   ||= (defined?(Rails.env) ? Rails.env : 'development')    
-        
+        self.environment   ||= (defined?(Rails.env) ? Rails.env : 'development')
+
         slave_pools = init_slave_pools
         # if there are no slave pools, we just want to silently exit and not edit the ActiveRecord::Base.connection
         if !slave_pools.empty?
           master = ActiveRecord::Base
           master.send :include, SlavePoolsModule::ActiveRecordExtensions
           ActiveRecord::Observer.send :include, SlavePoolsModule::ObserverExtensions
-          
+
           master.connection_proxy = new(master, slave_pools)
           master.logger.info("** slave_pools with master and #{slave_pools.length} slave_pool#{"s" if slave_pools.length > 1} (#{slave_pools.keys}) loaded.")
         else
           ActiveRecord::Base.logger.info(" No Slave Pools specified for this environment") #this is currently not logging
         end
       end
-      
+
       protected
-      
+
       def init_slave_pools
         slave_pools = {}
         ActiveRecord::Base.configurations.each do |name, db_config|
@@ -75,9 +74,9 @@ module SlavePoolsModule
         end
         return slave_pools
       end
-      
+
       private :new
-      
+
     end # end class << self
 
     def initialize(master, slave_pools)
@@ -95,15 +94,15 @@ module SlavePoolsModule
       else
         @current = slave
         @master_depth = 0
-        @config = @current.config_hash #setting this 
+        @config = @current.config_hash #setting this
       end
-      
+
     end
-    
+
     def default_pool
       @slave_pools[:default] || @slave_pools.values.first #if there is no default specified, use the first pool found
     end
-    
+
     def slave_pools
       @slave_pools
     end
@@ -111,7 +110,7 @@ module SlavePoolsModule
     def slave
       @current_pool.current
     end
-    
+
     def with_pool(pool_name = 'default')
       @current_pool = @slave_pools[pool_name.to_sym] || default_pool
       @current = slave unless within_master_block?
@@ -120,7 +119,7 @@ module SlavePoolsModule
       @current_pool = default_pool
       @current = slave unless within_master_block?
     end
-    
+
     def with_master
       @current = @master
       @master_depth += 1
@@ -130,7 +129,7 @@ module SlavePoolsModule
       @master_depth = 0 if @master_depth < 0 # ensure that master depth never gets below 0
       @current = slave if !within_master_block?
     end
-    
+
     def within_master_block?
       @master_depth > 0
     end
@@ -142,7 +141,7 @@ module SlavePoolsModule
     # Calls the method on master/slave and dynamically creates a new
     # method on success to speed up subsequent calls
     def method_missing(method, *args, &block)
-      send(target_method(method), method, *args, &block).tap do 
+      send(target_method(method), method, *args, &block).tap do
         create_delegation_method!(method)
       end
     end
@@ -165,11 +164,11 @@ module SlavePoolsModule
         end
       }, __FILE__, __LINE__
     end
-    
+
     def target_method(method)
       unsafe?(method) ? :send_to_master : :send_to_current
     end
-    
+
     def send_to_master(method, *args, &block)
       reconnect_master! if @reconnect
       @master.retrieve_connection.send(method, *args, &block)
@@ -177,7 +176,7 @@ module SlavePoolsModule
       log_errors(e, 'send_to_master', method)
       raise_master_error(e)
     end
-    
+
     def send_to_current(method, *args, &block)
       reconnect_master! if @reconnect && master?
       # logger.debug "[SlavePools] Using #{@current.name}"
@@ -192,32 +191,32 @@ module SlavePoolsModule
       logger.error %(#{e.message}\n#{e.backtrace.join("\n")})
       send_to_master(method, *args, &block) # if cant connect, send the query to master
     end
-    
+
     def reconnect_master!
       @master.retrieve_connection.reconnect!
       @reconnect = false
     end
-    
+
     def raise_master_error(error)
       logger.fatal "[SlavePools] Error accessing master database. Scheduling reconnect"
       @reconnect = true
       raise error
     end
-    
+
     def unsafe?(method)
       !SAFE_METHODS.include?(method)
     end
-    
+
     def master?
       @current == @master
     end
-        
+
     def logger
       ActiveRecord::Base.logger
     end
-    
+
     private
-    
+
     def self.add_to_pool(slave_pools, pool_name, slave_name, full_db_name, db_config)
       slave_pools[pool_name] ||= []
       db_config_with_symbols = db_config.inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo}
@@ -225,15 +224,15 @@ module SlavePoolsModule
         class #{pool_name.camelize}#{slave_name.camelize} < ActiveRecord::Base
           self.abstract_class = true
           establish_connection :#{full_db_name}
-          def self.config_hash 
+          def self.config_hash
             #{db_config_with_symbols.inspect}
-          end 
+          end
         end
       }, __FILE__, __LINE__
       slave_pools[pool_name] << "SlavePoolsModule::#{pool_name.camelize}#{slave_name.camelize}".constantize
       return slave_pools
     end
-    
+
     # method to verify whether DB connection is active?
     def self.connection_valid?(db_config = nil)
       is_connected = false
