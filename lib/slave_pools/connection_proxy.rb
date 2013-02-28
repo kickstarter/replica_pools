@@ -241,9 +241,10 @@ module SlavePoolsModule
           ActiveRecord::Base.establish_connection(db_config)
           ActiveRecord::Base.connection
           is_connected = ActiveRecord::Base.connected?
-          ActiveRecord::Base.establish_connection(environment) #rollback to the current environment to avoid issues
         rescue => e
           log_errors(e, 'self.connection_valid?')
+        ensure
+          ActiveRecord::Base.establish_connection(environment) #rollback to the current environment to avoid issues
         end
       end
       return is_connected
