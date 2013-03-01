@@ -1,3 +1,4 @@
+require 'active_record'
 require 'slave_pools/slave_pool'
 require 'slave_pools/active_record_extensions'
 require 'slave_pools/observer_extensions'
