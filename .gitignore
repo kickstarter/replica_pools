@@ -1,3 +1,4 @@
 spec/debug.log
 experimental
 .DS_Store
+Gemfile.lock
