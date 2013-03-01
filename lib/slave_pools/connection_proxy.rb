@@ -1,4 +1,5 @@
 require 'active_record/connection_adapters/abstract/query_cache'
+require 'set'
 
 module SlavePoolsModule
   class ConnectionProxy
@@ -7,9 +8,9 @@ module SlavePoolsModule
 
     # Safe methods are those that should either go to the slave ONLY or go
     # to the current active connection.
-    SAFE_METHODS = [ :select_all, :select_one, :select_value, :select_values,
+    SAFE_METHODS = Set.new([ :select_all, :select_one, :select_value, :select_values,
       :select_rows, :select, :verify!, :raw_connection, :active?, :reconnect!,
-      :disconnect!, :reset_runtime, :log, :log_info ]
+      :disconnect!, :reset_runtime, :log, :log_info ])
 
     if ActiveRecord.const_defined?(:SessionStore) # >= Rails 2.3
       DEFAULT_MASTER_MODELS = ['ActiveRecord::SessionStore::Session']
