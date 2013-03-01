@@ -1,5 +1,4 @@
 require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
-require SLAVE_POOLS_SPEC_DIR + '/../lib/slave_pools'
 require File.expand_path(File.dirname(__FILE__) + '/config/test_model')
 
 describe SlavePools do

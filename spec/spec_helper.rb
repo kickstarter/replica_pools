@@ -1,6 +1,8 @@
 require 'rubygems'
 require 'bundler/setup'
-%w[active_record yaml erb rspec logger].each {|lib| require lib}
+require 'logger'
+
+require 'slave_pools'
 
 module Rails
   def self.env
