@@ -214,11 +214,18 @@ describe SlavePools do
       end
     end
 
-    it 'should try a slave once and fall back to the master (should not retry other slaves)' do
-      @default_slave1.should_receive(:select_all).once.and_raise(RuntimeError)
+    it 'should NOT rescue a non Mysql2::Error' do
+      @default_slave1.should_receive(:select_all).once.and_raise(RuntimeError.new('some error'))
+      @default_slave2.should_not_receive(:select_all)
+      @master.should_not_receive(:select_all)
+      lambda { @proxy.select_all(@sql) }.should raise_error
+    end
+
+    it 'should rescue a Mysql::Error fall back to the master' do
+      @default_slave1.should_receive(:select_all).once.and_raise(Mysql2::Error.new('connection error'))
       @default_slave2.should_not_receive(:select_all)
       @master.should_receive(:select_all).and_return(true)
-      @proxy.select_all(@sql)
+      lambda { @proxy.select_all(@sql) }.should_not raise_error
     end
 
     it 'should try to reconnect the master connection after the master has failed' do
