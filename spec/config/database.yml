@@ -4,6 +4,7 @@ login: &login
   password:
   host: localhost
   encoding: utf8
+  read_timeout: 1
 
 readonly_login: &readonly_login
   adapter: mysql2
@@ -11,6 +12,7 @@ readonly_login: &readonly_login
   password: readme
   host: localhost
   encoding: utf8
+  read_timeout: 1
 
 test:
   database: test_db
