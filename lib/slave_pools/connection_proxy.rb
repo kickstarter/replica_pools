@@ -184,16 +184,17 @@ module SlavePoolsModule
       @current = @master if unsafe?(method) #failsafe to avoid sending dangerous method to master
       @current.retrieve_connection.send(method, *args, &block)
     rescue Mysql2::Error, ActiveRecord::StatementInvalid => e
-      if e.message.match(/Timeout waiting for a response from the last query/)
-        # Verify that the connection is active & re-raise
-        @current.retrieve_connection.verify!
-        raise e
-      end
       log_errors(e, 'send_to_current', method)
       raise_master_error(e) if master?
       logger.warn "[SlavePools] Error reading from slave database"
       logger.error %(#{e.message}\n#{e.backtrace.join("\n")})
-      send_to_master(method, *args, &block) # if cant connect, send the query to master
+      if e.message.match(/Timeout waiting for a response from the last query/)
+        # Verify that the connection is active & re-raise
+        @current.retrieve_connection.verify!
+        raise e
+      else
+        send_to_master(method, *args, &block) # if cant connect, send the query to master
+      end
     end
 
     def reconnect_master!
