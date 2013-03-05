@@ -1,4 +1,5 @@
 require 'active_record/connection_adapters/abstract/query_cache'
+require 'set'
 
 module SlavePoolsModule
   class ConnectionProxy
@@ -7,9 +8,9 @@ module SlavePoolsModule
 
     # Safe methods are those that should either go to the slave ONLY or go
     # to the current active connection.
-    SAFE_METHODS = [ :select_all, :select_one, :select_value, :select_values,
+    SAFE_METHODS = Set.new([ :select_all, :select_one, :select_value, :select_values,
       :select_rows, :select, :verify!, :raw_connection, :active?, :reconnect!,
-      :disconnect!, :reset_runtime, :log, :log_info ]
+      :disconnect!, :reset_runtime, :log, :log_info ])
 
     if ActiveRecord.const_defined?(:SessionStore) # >= Rails 2.3
       DEFAULT_MASTER_MODELS = ['ActiveRecord::SessionStore::Session']
@@ -182,12 +183,18 @@ module SlavePoolsModule
       # logger.debug "[SlavePools] Using #{@current.name}"
       @current = @master if unsafe?(method) #failsafe to avoid sending dangerous method to master
       @current.retrieve_connection.send(method, *args, &block)
-    rescue Mysql2::Error => e
+    rescue Mysql2::Error, ActiveRecord::StatementInvalid => e
       log_errors(e, 'send_to_current', method)
       raise_master_error(e) if master?
       logger.warn "[SlavePools] Error reading from slave database"
       logger.error %(#{e.message}\n#{e.backtrace.join("\n")})
-      send_to_master(method, *args, &block) # if cant connect, send the query to master
+      if e.message.match(/Timeout waiting for a response from the last query/)
+        # Verify that the connection is active & re-raise
+        @current.retrieve_connection.verify!
+        raise e
+      else
+        send_to_master(method, *args, &block) # if cant connect, send the query to master
+      end
     end
 
     def reconnect_master!

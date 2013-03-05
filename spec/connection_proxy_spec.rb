@@ -228,6 +228,13 @@ describe SlavePools do
       lambda { @proxy.select_all(@sql) }.should_not raise_error
     end
 
+    it 'should re-raise a Mysql::Error from a query timeout and not fall back to master' do
+      @default_slave1.should_receive(:select_all).once.and_raise(Mysql2::Error.new('Timeout waiting for a response from the last query. (waited 5 seconds)'))
+      @default_slave2.should_not_receive(:select_all)
+      @master.should_not_receive(:select_all)
+      lambda { @proxy.select_all(@sql) }.should raise_error
+    end
+
     it 'should try to reconnect the master connection after the master has failed' do
       @master.should_receive(:update).and_raise(RuntimeError)
       lambda { @proxy.update(@sql) }.should raise_error
