@@ -190,9 +190,11 @@ module SlavePoolsModule
       logger.error %(#{e.message}\n#{e.backtrace.join("\n")})
       if e.message.match(/Timeout waiting for a response from the last query/)
         # Verify that the connection is active & re-raise
+        logger.error "[SlavePools] Slave Query Timeout - do not send to master"
         @current.retrieve_connection.verify!
         raise e
       else
+        logger.error "[SlavePools] Slave Query Error - sending to master"
         send_to_master(method, *args, &block) # if cant connect, send the query to master
       end
     end
