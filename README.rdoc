@@ -248,7 +248,7 @@ To match spec/config/database.yml, you can:
   mysql>
     create database test_db;
     create user 'read_only'@'localhost' identified by 'readme';
-    grant select on db_test.* to 'read_only'@'localhost';
+    grant select on test_db.* to 'read_only'@'localhost';
 
 From the plugin directory, run:
 
