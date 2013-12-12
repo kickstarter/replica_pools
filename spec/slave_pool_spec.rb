@@ -1,11 +1,11 @@
 require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 
-describe SlavePoolsModule::SlavePool do
+describe SlavePools::SlavePool do
   
   context "Multiple slaves" do
     before do
       @slaves = ["db1", "db2", "db3"]
-      @slave_pool = SlavePoolsModule::SlavePool.new("name", @slaves.clone)
+      @slave_pool = SlavePools::SlavePool.new("name", @slaves.clone)
     end
     specify {@slave_pool.pool_size.should == 3}
 
@@ -22,7 +22,7 @@ describe SlavePoolsModule::SlavePool do
   context "Single Slave" do
     before do
       @slaves = ["db1"]
-      @slave_pool = SlavePoolsModule::SlavePool.new("name", @slaves.clone)
+      @slave_pool = SlavePools::SlavePool.new("name", @slaves.clone)
     end
     specify {@slave_pool.pool_size.should == 1}
 

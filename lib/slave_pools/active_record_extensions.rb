@@ -1,4 +1,4 @@
-module SlavePoolsModule
+module SlavePools
   module ActiveRecordExtensions
     def self.included(base)
       base.send :include, InstanceMethods

@@ -1,4 +1,4 @@
-module SlavePoolsModule
+module SlavePools
   # Implements the methods expected by the QueryCache module
   module QueryCacheCompat
 

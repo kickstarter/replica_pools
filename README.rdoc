@@ -192,8 +192,8 @@ Just add this to your controller:
 
 In your environment.rb or an initializer, add this *before* the call to <tt>setup!</tt>:
 
-  SlavePoolsModule::ConnectionProxy.master_models = ['CGI::Session::ActiveRecordStore::Session', 'PaymentTransaction', ...]
-  SlavePoolsModule::ConnectionProxy.setup!
+  SlavePools::ConnectionProxy.master_models = ['CGI::Session::ActiveRecordStore::Session', 'PaymentTransaction', ...]
+  SlavePools::ConnectionProxy.setup!
 
 *NOTE*: You cannot safely add more master_models after calling <tt>setup!</tt>.
 === Features

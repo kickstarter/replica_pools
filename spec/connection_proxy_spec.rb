@@ -15,8 +15,8 @@ describe SlavePools do
 
   describe "standard setup" do
     before(:each) do
-      SlavePoolsModule::ConnectionProxy.master_models = ['MasterModel']
-      SlavePoolsModule::ConnectionProxy.setup!
+      SlavePools::ConnectionProxy.master_models = ['MasterModel']
+      SlavePools::ConnectionProxy.setup!
       @proxy = ActiveRecord::Base.connection_proxy
       @slave_pool_hash = @proxy.slave_pools
       @slave_pool_array = @slave_pool_hash.values
@@ -32,27 +32,27 @@ describe SlavePools do
     end
 
     it 'AR::B should respond to #connection_proxy' do
-      ActiveRecord::Base.connection_proxy.should be_kind_of(SlavePoolsModule::ConnectionProxy)
+      ActiveRecord::Base.connection_proxy.should be_kind_of(SlavePools::ConnectionProxy)
     end
 
     it 'FooModel#connection should return an instance of SlavePools::ConnectionProxy' do
-      FooModel.connection.should be_kind_of(SlavePoolsModule::ConnectionProxy)
+      FooModel.connection.should be_kind_of(SlavePools::ConnectionProxy)
     end
 
     it 'MasterModel#connection should not return an instance of SlavePools::ConnectionProxy' do
-      MasterModel.connection.should_not be_kind_of(SlavePoolsModule::ConnectionProxy)
+      MasterModel.connection.should_not be_kind_of(SlavePools::ConnectionProxy)
     end
 
     it "should generate classes for each entry in the database.yml" do
-      defined?(SlavePoolsModule::DefaultDb1).should_not be_nil
-      defined?(SlavePoolsModule::DefaultDb2).should_not be_nil
-      defined?(SlavePoolsModule::SecondaryDb1).should_not be_nil
-      defined?(SlavePoolsModule::SecondaryDb2).should_not be_nil
-      defined?(SlavePoolsModule::SecondaryDb3).should_not be_nil
+      defined?(SlavePools::DefaultDb1).should_not be_nil
+      defined?(SlavePools::DefaultDb2).should_not be_nil
+      defined?(SlavePools::SecondaryDb1).should_not be_nil
+      defined?(SlavePools::SecondaryDb2).should_not be_nil
+      defined?(SlavePools::SecondaryDb3).should_not be_nil
     end
 
     it "should not generate classes for an invalid DB in the database.yml" do
-      defined?(SlavePoolsModule::DefaultFakeDb).should be_nil
+      defined?(SlavePools::DefaultFakeDb).should be_nil
     end
 
     it 'should handle nested with_master-blocks correctly' do

@@ -1,4 +1,4 @@
-module SlavePoolsModule
+module SlavePools
   class SlavePool
     
     attr_accessor :name, :slaves,:pool_size, :current_index

@@ -1,4 +1,4 @@
-module SlavePoolsModule
+module SlavePools
   module ObserverExtensions
     def self.included(base)
       base.alias_method_chain :update, :masterdb

@@ -9,7 +9,7 @@ describe SlavePools do
     ActiveRecord::Migration.verbose = false
     ActiveRecord::Migration.create_table(:test_models, :force => true) {}
     ActiveRecord::Migration.create_table(:test_subs, :force => true) {|t| t.integer :test_model_id}
-    SlavePoolsModule::ConnectionProxy.setup!
+    SlavePools::ConnectionProxy.setup!
     @observer = TestModelObserver.instance
   end
   
