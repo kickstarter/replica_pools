@@ -124,7 +124,7 @@ describe SlavePools do
     it 'should send dangerous methods to the master' do
       meths = [:insert, :update, :delete, :execute]
       meths.each do |meth|
-        @default_slave1.stub!(meth).and_raise(RuntimeError)
+        @default_slave1.stub(meth).and_raise(RuntimeError)
         @master.should_receive(meth).and_return(true)
         @proxy.send(meth, @sql)
       end
