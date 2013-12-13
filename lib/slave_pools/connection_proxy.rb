@@ -56,9 +56,9 @@ module SlavePools
           ActiveRecord::Observer.send :include, SlavePools::ObserverExtensions
 
           master.connection_proxy = new(master, slave_pools)
-          master.logger.info("** slave_pools with master and #{slave_pools.length} slave_pool#{"s" if slave_pools.length > 1} (#{slave_pools.keys}) loaded.")
+          SlavePools.logger.info("** slave_pools with master and #{slave_pools.length} slave_pool#{"s" if slave_pools.length > 1} (#{slave_pools.keys}) loaded.")
         else
-          ActiveRecord::Base.logger.info(" No Slave Pools specified for this environment") #this is currently not logging
+          SlavePools.logger.info("No Slave Pools specified for this environment") #this is currently not logging
         end
       end
       private :new
@@ -103,19 +103,13 @@ module SlavePools
             ActiveRecord::Base.connection
             is_connected = ActiveRecord::Base.connected?
           rescue => e
-            log_errors(e, 'self.connection_valid?')
+            SlavePools.logger.error "[SlavePools] - Error: #{e}"
+            SlavePools.logger.error "[SlavePools] - SlavePool Method: self.connection_valid?"
           ensure
             ActiveRecord::Base.establish_connection(environment) #rollback to the current environment to avoid issues
           end
         end
         return is_connected
-      end
-
-      # logging class errors
-      def log_errors(error, sp_method)
-        logger = ActiveRecord::Base.logger
-        logger.error "[SlavePools] - Error: #{error}"
-        logger.error "[SlavePools] - SlavePool Method: #{sp_method}"
       end
 
     end # end class << self
@@ -258,13 +252,12 @@ module SlavePools
       @current == @master
     end
 
-    def logger
-      ActiveRecord::Base.logger
-    end
-
     private
 
-    # logging instance errors
+    def logger
+      SlavePools.logger
+    end
+
     def log_errors(error, sp_method, db_method)
       logger.error "[SlavePools] - Error: #{error}"
       logger.error "[SlavePools] - SlavePool Method: #{sp_method}"

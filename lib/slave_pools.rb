@@ -38,5 +38,9 @@ module SlavePools
     def current
       ActiveRecord::Base.connection_proxy.current if active?
     end
+
+    def logger
+      ActiveRecord::Base.logger
+    end
   end
 end
