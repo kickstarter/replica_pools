@@ -19,6 +19,8 @@ module SlavePools
           return
         end
 
+        generate_safe_delegations
+
         master = ActiveRecord::Base
         master.send :include, SlavePools::ActiveRecordExtensions
         ActiveRecord::Observer.send :include, SlavePools::ObserverExtensions
@@ -74,6 +76,20 @@ module SlavePools
         return false
       ensure
         ActiveRecord::Base.establish_connection(SlavePools.config.environment)
+      end
+
+      def generate_safe_delegations
+        SlavePools.config.safe_methods.each do |method|
+          generate_safe_delegation(method) unless instance_methods.include?(method)
+        end
+      end
+
+      def generate_safe_delegation(method)
+        class_eval %Q{
+          def #{method}(*args, &block)
+            send_to_current(:#{method}, *args, &block)
+          end
+        }, __FILE__, __LINE__
       end
 
     end # end class << self
@@ -141,10 +157,11 @@ module SlavePools
       slave_pools[:default] || slave_pools.values.first #if there is no default specified, use the first pool found
     end
 
-    # Calls the method on master/slave and dynamically creates a new
-    # method on success to speed up subsequent calls
+    # Proxies any unknown methods to master.
+    # Safe methods have been generated during `setup!`.
+    # Creates a method to speed up subsequent calls.
     def method_missing(method, *args, &block)
-      create_delegation_method!(method)
+      generate_unsafe_delegation(method)
       send(method, *args, &block)
     end
 
@@ -152,16 +169,12 @@ module SlavePools
       master_depth > 0
     end
 
-    def create_delegation_method!(method)
+    def generate_unsafe_delegation(method)
       self.instance_eval %Q{
         def #{method}(*args, &block)
-          #{target_method(method)}(:#{method}, *args, &block)
+          send_to_master(:#{method}, *args, &block)
         end
       }, __FILE__, __LINE__
-    end
-
-    def target_method(method)
-      unsafe?(method) ? :send_to_master : :send_to_current
     end
 
     def send_to_master(method, *args, &block)

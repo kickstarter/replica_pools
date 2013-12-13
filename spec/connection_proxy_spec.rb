@@ -143,10 +143,16 @@ describe SlavePools do
       @proxy.instance_variable_get("@master_depth").should == 0
     end
 
-    it 'should dynamically generate safe methods' do
-      @proxy.should_not respond_to(:select_value)
+    it 'should pre-generate safe methods' do
+      @proxy.should respond_to(:select_value)
       @proxy.select_value(@sql)
       @proxy.should respond_to(:select_value)
+    end
+
+    it 'should dynamically generate unsafe methods' do
+      @proxy.should_not respond_to(:execute)
+      @proxy.execute(@sql)
+      @proxy.should respond_to(:execute)
     end
 
     it 'should cache queries using select_all' do
