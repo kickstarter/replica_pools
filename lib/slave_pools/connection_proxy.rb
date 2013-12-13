@@ -82,25 +82,22 @@ module SlavePools
       @slave_pools = slave_pools.inject({}) do |h, (name, pool)|
         h.merge!(name.to_sym => SlavePool.new(name, pool))
       end
-      @master    = master
-      @reconnect = false
+      @master       = master
+      @master_depth = 0
+      @reconnect    = false
       @current_pool = default_pool
+
       if SlavePools.config.defaults_to_master
         @current = @master
         @master_depth = 1
       else
         @current = slave
-        @master_depth = 0
       end
 
       # this ivar is for ConnectionAdapter compatibility
       # some gems (e.g. newrelic_rpm) will actually use
       # instance_variable_get(:@config) to find it.
       @config = current.connection_config
-    end
-
-    def slave
-      current_pool.current
     end
 
     def with_pool(pool_name = 'default')
@@ -121,8 +118,8 @@ module SlavePools
       self.current = slave unless within_master_block?
     end
 
-    def transaction(start_db_transaction = true, &block)
-      with_master { master.retrieve_connection.transaction(start_db_transaction, &block) }
+    def transaction(*args, &block)
+      with_master { master.transaction(*args, &block) }
     end
 
     # Switches to the next slave database for read operations.
@@ -135,6 +132,10 @@ module SlavePools
     end
 
     protected
+
+    def slave
+      current_pool.current
+    end
 
     def default_pool
       slave_pools[:default] || slave_pools.values.first #if there is no default specified, use the first pool found
