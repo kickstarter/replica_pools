@@ -188,7 +188,6 @@ module SlavePools
     def send_to_current(method, *args, &block)
       reconnect_master! if @reconnect && master?
       # logger.debug "[SlavePools] Using #{current.name}"
-      self.current = master if unsafe?(method) #failsafe to avoid sending dangerous method to master
       current.retrieve_connection.send(method, *args, &block)
     rescue Mysql2::Error, ActiveRecord::StatementInvalid => e
       log_errors(e, 'send_to_current', method)
@@ -215,10 +214,6 @@ module SlavePools
       logger.fatal "[SlavePools] Error accessing master database. Scheduling reconnect"
       @reconnect = true
       raise error
-    end
-
-    def unsafe?(method)
-      !SlavePools.config.safe_methods.include?(method)
     end
 
     def master?

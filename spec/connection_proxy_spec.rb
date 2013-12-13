@@ -130,12 +130,6 @@ describe SlavePools do
       end
     end
 
-    it "should send writes to the master, even if current gets called for a write" do
-      @proxy.instance_variable_set("@master_depth", 0)
-      @master.should_receive(:update).and_return(true)
-      @proxy.send(:send_to_current, :update, @sql, {})
-    end
-
     it "should not allow master depth to get below 0" do
       @proxy.instance_variable_set("@master_depth", -500)
       @proxy.instance_variable_get("@master_depth").should == -500
