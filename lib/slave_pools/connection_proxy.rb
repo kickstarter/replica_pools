@@ -8,9 +8,11 @@ module SlavePools
 
     # Safe methods are those that should either go to the slave ONLY or go
     # to the current active connection.
-    SAFE_METHODS = Set.new([ :select_all, :select_one, :select_value, :select_values,
+    SAFE_METHODS = Set.new([
+      :select_all, :select_one, :select_value, :select_values,
       :select_rows, :select, :verify!, :raw_connection, :active?, :reconnect!,
-      :disconnect!, :reset_runtime, :log, :log_info ])
+      :disconnect!, :reset_runtime, :log, :log_info
+    ])
 
     if ActiveRecord.const_defined?(:SessionStore) # >= Rails 2.3
       DEFAULT_MASTER_MODELS = ['ActiveRecord::SessionStore::Session']
@@ -23,7 +25,7 @@ module SlavePools
 
     class << self
 
-      # defaults to Rails.env if multi_db is used with Rails
+      # defaults to Rails.env if slave_pools is used with Rails
       # defaults to 'development' when used outside Rails
       attr_accessor :environment
 
@@ -34,13 +36,10 @@ module SlavePools
       #  SlavePool::ConnectionProxy.master_models = ['MySessionStore', 'PaymentTransaction']
       attr_accessor :master_models
 
-      #true or false - whether you want to include the ActionController helpers or not
-      #this allow
-
       # if master should be the default db
       attr_accessor :defaults_to_master
 
-      # #setting a config instance variable so that thinking sphinx,and other gems that use the connection.instance_variable_get(:@config), work correctly
+      # setting a config instance variable so that thinking sphinx,and other gems that use the connection.instance_variable_get(:@config), work correctly
       attr_accessor :config
 
       # Replaces the connection of ActiveRecord::Base with a proxy and
@@ -197,7 +196,7 @@ module SlavePools
       @current = @master
     end
 
-   protected
+    protected
 
     def create_delegation_method!(method)
       self.instance_eval %Q{
