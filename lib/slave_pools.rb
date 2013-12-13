@@ -1,4 +1,5 @@
 require 'active_record'
+require 'slave_pools/config'
 require 'slave_pools/slave_pool'
 require 'slave_pools/active_record_extensions'
 require 'slave_pools/observer_extensions'
@@ -41,6 +42,10 @@ module SlavePools
 
     def logger
       ActiveRecord::Base.logger
+    end
+
+    def config
+      @config ||= SlavePools::Config.new
     end
   end
 end

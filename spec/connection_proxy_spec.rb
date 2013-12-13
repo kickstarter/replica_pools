@@ -15,7 +15,7 @@ describe SlavePools do
 
   describe "standard setup" do
     before(:each) do
-      SlavePools::ConnectionProxy.master_models = ['MasterModel']
+      SlavePools.config.master_models = ['MasterModel']
       SlavePools::ConnectionProxy.setup!
       @proxy = ActiveRecord::Base.connection_proxy
       @slave_pool_hash = @proxy.slave_pools

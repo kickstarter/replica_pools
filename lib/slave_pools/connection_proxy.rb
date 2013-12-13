@@ -14,40 +14,18 @@ module SlavePools
       :disconnect!, :reset_runtime, :log, :log_info
     ])
 
-    if ActiveRecord.const_defined?(:SessionStore) # >= Rails 2.3
-      DEFAULT_MASTER_MODELS = ['ActiveRecord::SessionStore::Session']
-    else # =< Rails 2.3
-      DEFAULT_MASTER_MODELS = ['CGI::Session::ActiveRecordStore::Session']
-    end
+
 
     attr_accessor :master
     attr_accessor :master_depth, :current, :current_pool
 
     class << self
-
-      # defaults to Rails.env if slave_pools is used with Rails
-      # defaults to 'development' when used outside Rails
-      attr_accessor :environment
-
-      # a list of models that should always go directly to the master
-      #
-      # Example:
-      #
-      #  SlavePool::ConnectionProxy.master_models = ['MySessionStore', 'PaymentTransaction']
-      attr_accessor :master_models
-
-      # if master should be the default db
-      attr_accessor :defaults_to_master
-
       # Replaces the connection of ActiveRecord::Base with a proxy and
       # establishes the connections to the slaves.
       def setup!
-        self.master_models ||= DEFAULT_MASTER_MODELS
-        self.environment   ||= (defined?(Rails.env) ? Rails.env : 'development')
-
         # if there are no slave pools, we just want to silently exit and not edit the ActiveRecord::Base.connection
         if slave_pools.empty?
-          SlavePools.logger.info("[SlavePools] No slave pools found for #{environment}")
+          SlavePools.logger.info("[SlavePools] No slave pools found for #{SlavePools.config.environment}")
           return
         end
 
@@ -74,7 +52,7 @@ module SlavePools
       # finds valid slave pool configs
       def slave_pool_configurations
         ActiveRecord::Base.configurations.map do |name, config|
-          next unless name.to_s =~ /#{environment}_pool_(.*)_name_(.*)/
+          next unless name.to_s =~ /#{SlavePools.config.environment}_pool_(.*)_name_(.*)/
           next unless connection_valid?(config)
           [name, $1, $2]
         end.compact
@@ -110,7 +88,7 @@ module SlavePools
             SlavePools.logger.error "[SlavePools] - Error: #{e}"
             SlavePools.logger.error "[SlavePools] - SlavePool Method: self.connection_valid?"
           ensure
-            ActiveRecord::Base.establish_connection(environment) #rollback to the current environment to avoid issues
+            ActiveRecord::Base.establish_connection(SlavePools.config.environment) #rollback to the current environment to avoid issues
           end
         end
         return is_connected
@@ -126,7 +104,7 @@ module SlavePools
       @master    = master
       @reconnect = false
       @current_pool = default_pool
-      if self.class.defaults_to_master
+      if SlavePools.config.defaults_to_master
         @current = @master
         @master_depth = 1
       else

@@ -41,14 +41,14 @@ module SlavePools
       end
 
       def hijack_connection
-        return if ConnectionProxy.master_models.include?(self.to_s)
+        return if SlavePools.config.master_models.include?(self.to_s)
         # logger.info "[SlavePools] hijacking connection for #{self.to_s}" # commenting out noisy logging
         class << self
           def connection
             self.connection_proxy
           end
         end
-      end      
+      end
     end
   end
 end
