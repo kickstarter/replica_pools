@@ -45,7 +45,6 @@ module SlavePools
         self.master_models ||= DEFAULT_MASTER_MODELS
         self.environment   ||= (defined?(Rails.env) ? Rails.env : 'development')
 
-        slave_pools = init_slave_pools
         # if there are no slave pools, we just want to silently exit and not edit the ActiveRecord::Base.connection
         if !slave_pools.empty?
           master = ActiveRecord::Base
@@ -63,8 +62,8 @@ module SlavePools
       protected
 
       # each pool is a set of connection classes
-      def init_slave_pools
-        Hash.new{|h, k| h[k] = [] }.tap do |pools|
+      def slave_pools
+        @slave_pools ||= Hash.new{|h, k| h[k] = [] }.tap do |pools|
           slave_pool_configurations.each do |conn_name, pool_name, slave_name|
             pools[pool_name] << connection_class(pool_name, slave_name, conn_name)
           end
