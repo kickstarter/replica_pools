@@ -142,9 +142,8 @@ module SlavePools
     # Calls the method on master/slave and dynamically creates a new
     # method on success to speed up subsequent calls
     def method_missing(method, *args, &block)
-      send(target_method(method), method, *args, &block).tap do
-        create_delegation_method!(method)
-      end
+      create_delegation_method!(method)
+      send(method, *args, &block)
     end
 
     # Switches to the next slave database for read operations.
