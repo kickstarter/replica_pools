@@ -62,6 +62,7 @@ module SlavePools
           ActiveRecord::Base.logger.info(" No Slave Pools specified for this environment") #this is currently not logging
         end
       end
+      private :new
 
       protected
 
@@ -76,7 +77,47 @@ module SlavePools
         return slave_pools
       end
 
-      private :new
+      private
+
+      def add_to_pool(slave_pools, pool_name, slave_name, full_db_name, db_config)
+        slave_pools[pool_name] ||= []
+        db_config_with_symbols = db_config.inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo}
+        SlavePools.module_eval %Q{
+          class #{pool_name.camelize}#{slave_name.camelize} < ActiveRecord::Base
+            self.abstract_class = true
+            establish_connection :#{full_db_name}
+            def self.config_hash
+              #{db_config_with_symbols.inspect}
+            end
+          end
+        }, __FILE__, __LINE__
+        slave_pools[pool_name] << "SlavePools::#{pool_name.camelize}#{slave_name.camelize}".constantize
+        return slave_pools
+      end
+
+      # method to verify whether DB connection is active?
+      def connection_valid?(db_config = nil)
+        is_connected = false
+        if db_config
+          begin
+            ActiveRecord::Base.establish_connection(db_config)
+            ActiveRecord::Base.connection
+            is_connected = ActiveRecord::Base.connected?
+          rescue => e
+            log_errors(e, 'self.connection_valid?')
+          ensure
+            ActiveRecord::Base.establish_connection(environment) #rollback to the current environment to avoid issues
+          end
+        end
+        return is_connected
+      end
+
+      # logging class errors
+      def log_errors(error, sp_method)
+        logger = ActiveRecord::Base.logger
+        logger.error "[SlavePools] - Error: #{error}"
+        logger.error "[SlavePools] - SlavePool Method: #{sp_method}"
+      end
 
     end # end class << self
 
@@ -224,39 +265,6 @@ module SlavePools
 
     private
 
-    def self.add_to_pool(slave_pools, pool_name, slave_name, full_db_name, db_config)
-      slave_pools[pool_name] ||= []
-      db_config_with_symbols = db_config.inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo}
-      SlavePools.module_eval %Q{
-        class #{pool_name.camelize}#{slave_name.camelize} < ActiveRecord::Base
-          self.abstract_class = true
-          establish_connection :#{full_db_name}
-          def self.config_hash
-            #{db_config_with_symbols.inspect}
-          end
-        end
-      }, __FILE__, __LINE__
-      slave_pools[pool_name] << "SlavePools::#{pool_name.camelize}#{slave_name.camelize}".constantize
-      return slave_pools
-    end
-
-    # method to verify whether DB connection is active?
-    def self.connection_valid?(db_config = nil)
-      is_connected = false
-      if db_config
-        begin
-          ActiveRecord::Base.establish_connection(db_config)
-          ActiveRecord::Base.connection
-          is_connected = ActiveRecord::Base.connected?
-        rescue => e
-          log_errors(e, 'self.connection_valid?')
-        ensure
-          ActiveRecord::Base.establish_connection(environment) #rollback to the current environment to avoid issues
-        end
-      end
-      return is_connected
-    end
-
     # logging instance errors
     def log_errors(error, sp_method, db_method)
       logger.error "[SlavePools] - Error: #{error}"
@@ -270,13 +278,6 @@ module SlavePools
       logger.error "[SlavePools] - Reconnect Value: #{@reconnect}"
       logger.error "[SlavePools] - Default Pool: #{default_pool}"
       logger.error "[SlavePools] - DB Method: #{db_method}"
-    end
-
-    # logging class errors
-    def self.log_errors(error, sp_method)
-      logger = ActiveRecord::Base.logger
-      logger.error "[SlavePools] - Error: #{error}"
-      logger.error "[SlavePools] - SlavePool Method: #{sp_method}"
     end
   end
 end
