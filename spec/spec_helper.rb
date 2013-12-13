@@ -8,6 +8,10 @@ module Rails
   def self.env
     ActiveSupport::StringInquirer.new("test")
   end
+
+  module VERSION
+    MAJOR = 3
+  end
 end
 
 SLAVE_POOLS_SPEC_DIR = File.dirname(__FILE__)

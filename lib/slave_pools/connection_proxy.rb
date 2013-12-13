@@ -6,16 +6,6 @@ module SlavePools
     include ActiveRecord::ConnectionAdapters::QueryCache
     include QueryCacheCompat
 
-    # Safe methods are those that should either go to the slave ONLY or go
-    # to the current active connection.
-    SAFE_METHODS = Set.new([
-      :select_all, :select_one, :select_value, :select_values,
-      :select_rows, :select, :verify!, :raw_connection, :active?, :reconnect!,
-      :disconnect!, :reset_runtime, :log, :log_info
-    ])
-
-
-
     attr_accessor :master
     attr_accessor :master_depth, :current, :current_pool
 
@@ -221,7 +211,7 @@ module SlavePools
     end
 
     def unsafe?(method)
-      !SAFE_METHODS.include?(method)
+      !SlavePools.config.safe_methods.include?(method)
     end
 
     def master?
