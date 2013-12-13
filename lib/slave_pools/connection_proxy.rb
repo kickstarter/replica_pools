@@ -100,10 +100,6 @@ module SlavePools
       @config = @current.connection_config
     end
 
-    def default_pool
-      @slave_pools[:default] || @slave_pools.values.first #if there is no default specified, use the first pool found
-    end
-
     def slave_pools
       @slave_pools
     end
@@ -131,19 +127,8 @@ module SlavePools
       @current = slave if !within_master_block?
     end
 
-    def within_master_block?
-      @master_depth > 0
-    end
-
     def transaction(start_db_transaction = true, &block)
       with_master { @master.retrieve_connection.transaction(start_db_transaction, &block) }
-    end
-
-    # Calls the method on master/slave and dynamically creates a new
-    # method on success to speed up subsequent calls
-    def method_missing(method, *args, &block)
-      create_delegation_method!(method)
-      send(method, *args, &block)
     end
 
     # Switches to the next slave database for read operations.
@@ -156,6 +141,21 @@ module SlavePools
     end
 
     protected
+
+    def default_pool
+      @slave_pools[:default] || @slave_pools.values.first #if there is no default specified, use the first pool found
+    end
+
+    # Calls the method on master/slave and dynamically creates a new
+    # method on success to speed up subsequent calls
+    def method_missing(method, *args, &block)
+      create_delegation_method!(method)
+      send(method, *args, &block)
+    end
+
+    def within_master_block?
+      @master_depth > 0
+    end
 
     def create_delegation_method!(method)
       self.instance_eval %Q{
