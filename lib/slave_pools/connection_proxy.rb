@@ -58,8 +58,6 @@ module SlavePools
         end.compact
       end
 
-      private
-
       # generates a unique ActiveRecord::Base subclass for a single slave
       def connection_class(pool_name, slave_name, connection_name)
         class_name = "#{pool_name.camelize}#{slave_name.camelize}"
@@ -76,22 +74,16 @@ module SlavePools
         SlavePools.const_get(class_name)
       end
 
-      # method to verify whether DB connection is active?
-      def connection_valid?(db_config = nil)
-        is_connected = false
-        if db_config
-          begin
-            ActiveRecord::Base.establish_connection(db_config)
-            ActiveRecord::Base.connection
-            is_connected = ActiveRecord::Base.connected?
-          rescue => e
-            SlavePools.logger.error "[SlavePools] - Error: #{e}"
-            SlavePools.logger.error "[SlavePools] - SlavePool Method: self.connection_valid?"
-          ensure
-            ActiveRecord::Base.establish_connection(SlavePools.config.environment) #rollback to the current environment to avoid issues
-          end
-        end
-        return is_connected
+      # tests a connection to be sure it's configured
+      def connection_valid?(db_config)
+        ActiveRecord::Base.establish_connection(db_config)
+        return ActiveRecord::Base.connection && ActiveRecord::Base.connected?
+      rescue => e
+        SlavePools.logger.error "[SlavePools] - Could not connect to #{db_config.inspect}"
+        SlavePools.logger.error "[SlavePools] - #{e}"
+        return false
+      ensure
+        ActiveRecord::Base.establish_connection(SlavePools.config.environment)
       end
 
     end # end class << self
