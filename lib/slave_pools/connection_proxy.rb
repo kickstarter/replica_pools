@@ -67,10 +67,12 @@ module SlavePools
 
       def init_slave_pools
         slave_pools = {}
-        ActiveRecord::Base.configurations.each do |name, db_config|
+        ActiveRecord::Base.configurations.each do |conn_name, db_config|
           # look for dbs matching the slave_pool format and verify a test connection before adding it to the pools
-          if name.to_s =~ /#{self.environment}_pool_(.*)_name_(.*)/ && connection_valid?(db_config)
-            slave_pools = add_to_pool(slave_pools, $1, $2, name, db_config)
+          if conn_name.to_s =~ /#{self.environment}_pool_(.*)_name_(.*)/ && connection_valid?(db_config)
+            pool_name, slave_name = $1, $2
+            slave_pools[$1] ||= []
+            slave_pools[$1] << connection_class($1, $2, conn_name, db_config)
           end
         end
         return slave_pools
@@ -78,20 +80,21 @@ module SlavePools
 
       private
 
-      def add_to_pool(slave_pools, pool_name, slave_name, full_db_name, db_config)
-        slave_pools[pool_name] ||= []
+      # generates a unique ActiveRecord::Base subclass for a single slave
+      def connection_class(pool_name, slave_name, connection_name, db_config)
+        class_name = "#{pool_name.camelize}#{slave_name.camelize}"
         db_config_with_symbols = db_config.inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo}
+
         SlavePools.module_eval %Q{
-          class #{pool_name.camelize}#{slave_name.camelize} < ActiveRecord::Base
+          class #{class_name} < ActiveRecord::Base
             self.abstract_class = true
-            establish_connection :#{full_db_name}
+            establish_connection :#{connection_name}
             def self.config_hash
               #{db_config_with_symbols.inspect}
             end
           end
         }, __FILE__, __LINE__
-        slave_pools[pool_name] << "SlavePools::#{pool_name.camelize}#{slave_name.camelize}".constantize
-        return slave_pools
+        SlavePools.const_get(class_name)
       end
 
       # method to verify whether DB connection is active?
