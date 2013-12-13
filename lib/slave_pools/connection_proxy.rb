@@ -39,9 +39,6 @@ module SlavePools
       # if master should be the default db
       attr_accessor :defaults_to_master
 
-      # setting a config instance variable so that thinking sphinx,and other gems that use the connection.instance_variable_get(:@config), work correctly
-      attr_accessor :config
-
       # Replaces the connection of ActiveRecord::Base with a proxy and
       # establishes the connections to the slaves.
       def setup!
@@ -72,7 +69,7 @@ module SlavePools
           if conn_name.to_s =~ /#{self.environment}_pool_(.*)_name_(.*)/ && connection_valid?(db_config)
             pool_name, slave_name = $1, $2
             slave_pools[$1] ||= []
-            slave_pools[$1] << connection_class($1, $2, conn_name, db_config)
+            slave_pools[$1] << connection_class($1, $2, conn_name)
           end
         end
         return slave_pools
@@ -81,16 +78,15 @@ module SlavePools
       private
 
       # generates a unique ActiveRecord::Base subclass for a single slave
-      def connection_class(pool_name, slave_name, connection_name, db_config)
+      def connection_class(pool_name, slave_name, connection_name)
         class_name = "#{pool_name.camelize}#{slave_name.camelize}"
-        db_config_with_symbols = db_config.inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo}
 
         SlavePools.module_eval %Q{
           class #{class_name} < ActiveRecord::Base
             self.abstract_class = true
             establish_connection :#{connection_name}
-            def self.config_hash
-              #{db_config_with_symbols.inspect}
+            def self.connection_config
+              configurations[#{connection_name.to_s.inspect}]
             end
           end
         }, __FILE__, __LINE__
@@ -128,13 +124,15 @@ module SlavePools
       if self.class.defaults_to_master
         @current = @master
         @master_depth = 1
-        @config = master.connection.instance_variable_get(:@config)
       else
         @current = slave
         @master_depth = 0
-        @config = @current.config_hash #setting this
       end
 
+      # this ivar is for ConnectionAdapter compatibility
+      # some gems (e.g. newrelic_rpm) will actually use
+      # instance_variable_get(:@config) to find it.
+      @config = @current.connection_config
     end
 
     def default_pool
