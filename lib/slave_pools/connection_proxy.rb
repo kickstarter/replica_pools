@@ -7,7 +7,7 @@ module SlavePools
     include QueryCacheCompat
 
     attr_accessor :master
-    attr_accessor :master_depth, :current, :current_pool
+    attr_accessor :master_depth, :current, :current_pool, :slave_pools
 
     class << self
       # Replaces the connection of ActiveRecord::Base with a proxy and
@@ -79,9 +79,8 @@ module SlavePools
     end # end class << self
 
     def initialize(master, slave_pools)
-      @slave_pools = {}
-      slave_pools.each do |pool_name, slaves|
-        @slave_pools[pool_name.to_sym] = SlavePool.new(pool_name, slaves)
+      @slave_pools = slave_pools.inject({}) do |h, (name, pool)|
+        h.merge!(name.to_sym => SlavePool.new(name, pool))
       end
       @master    = master
       @reconnect = false
@@ -97,53 +96,48 @@ module SlavePools
       # this ivar is for ConnectionAdapter compatibility
       # some gems (e.g. newrelic_rpm) will actually use
       # instance_variable_get(:@config) to find it.
-      @config = @current.connection_config
-    end
-
-    def slave_pools
-      @slave_pools
+      @config = current.connection_config
     end
 
     def slave
-      @current_pool.current
+      current_pool.current
     end
 
     def with_pool(pool_name = 'default')
-      @current_pool = @slave_pools[pool_name.to_sym] || default_pool
-      @current = slave unless within_master_block?
+      self.current_pool = slave_pools[pool_name.to_sym] || default_pool
+      self.current = slave unless within_master_block?
       yield
     ensure
-      @current_pool = default_pool
-      @current = slave unless within_master_block?
+      self.current_pool = default_pool
+      self.current = slave unless within_master_block?
     end
 
     def with_master
-      @current = @master
-      @master_depth += 1
+      self.current = master
+      self.master_depth += 1
       yield
     ensure
-      @master_depth -= 1
-      @master_depth = 0 if @master_depth < 0 # ensure that master depth never gets below 0
-      @current = slave if !within_master_block?
+      self.master_depth = [master_depth - 1, 0].max # ensure that master depth never gets below 0
+      self.current = slave unless within_master_block?
     end
 
     def transaction(start_db_transaction = true, &block)
-      with_master { @master.retrieve_connection.transaction(start_db_transaction, &block) }
+      with_master { master.retrieve_connection.transaction(start_db_transaction, &block) }
     end
 
     # Switches to the next slave database for read operations.
     # Fails over to the master database if all slaves are unavailable.
     def next_slave!
       return if within_master_block? # don't if in with_master block
-      @current = @current_pool.next
+      self.current = current_pool.next
     rescue
-      @current = @master
+      self.current = master
     end
 
     protected
 
     def default_pool
-      @slave_pools[:default] || @slave_pools.values.first #if there is no default specified, use the first pool found
+      slave_pools[:default] || slave_pools.values.first #if there is no default specified, use the first pool found
     end
 
     # Calls the method on master/slave and dynamically creates a new
@@ -154,7 +148,7 @@ module SlavePools
     end
 
     def within_master_block?
-      @master_depth > 0
+      master_depth > 0
     end
 
     def create_delegation_method!(method)
@@ -171,7 +165,7 @@ module SlavePools
 
     def send_to_master(method, *args, &block)
       reconnect_master! if @reconnect
-      @master.retrieve_connection.send(method, *args, &block)
+      master.retrieve_connection.send(method, *args, &block)
     rescue => e
       log_errors(e, 'send_to_master', method)
       raise_master_error(e)
@@ -179,9 +173,9 @@ module SlavePools
 
     def send_to_current(method, *args, &block)
       reconnect_master! if @reconnect && master?
-      # logger.debug "[SlavePools] Using #{@current.name}"
-      @current = @master if unsafe?(method) #failsafe to avoid sending dangerous method to master
-      @current.retrieve_connection.send(method, *args, &block)
+      # logger.debug "[SlavePools] Using #{current.name}"
+      self.current = master if unsafe?(method) #failsafe to avoid sending dangerous method to master
+      current.retrieve_connection.send(method, *args, &block)
     rescue Mysql2::Error, ActiveRecord::StatementInvalid => e
       log_errors(e, 'send_to_current', method)
       raise_master_error(e) if master?
@@ -190,7 +184,7 @@ module SlavePools
       if e.message.match(/Timeout waiting for a response from the last query/)
         # Verify that the connection is active & re-raise
         logger.error "[SlavePools] Slave Query Timeout - do not send to master"
-        @current.retrieve_connection.verify!
+        current.retrieve_connection.verify!
         raise e
       else
         logger.error "[SlavePools] Slave Query Error - sending to master"
@@ -199,7 +193,7 @@ module SlavePools
     end
 
     def reconnect_master!
-      @master.retrieve_connection.reconnect!
+      master.retrieve_connection.reconnect!
       @reconnect = false
     end
 
@@ -214,7 +208,7 @@ module SlavePools
     end
 
     def master?
-      @current == @master
+      current == master
     end
 
     private
@@ -226,12 +220,12 @@ module SlavePools
     def log_errors(error, sp_method, db_method)
       logger.error "[SlavePools] - Error: #{error}"
       logger.error "[SlavePools] - SlavePool Method: #{sp_method}"
-      logger.error "[SlavePools] - Master Value: #{@master}"
-      logger.error "[SlavePools] - Master Depth: #{@master_depth}"
-      logger.error "[SlavePools] - Current Value: #{@current}"
-      logger.error "[SlavePools] - Current Pool: #{@current_pool}"
-      logger.error "[SlavePools] - Current Pool Slaves: #{@current_pool.slaves}" if @current_pool
-      logger.error "[SlavePools] - Current Pool Name: #{@current_pool.name}" if @current_pool
+      logger.error "[SlavePools] - Master Value: #{master}"
+      logger.error "[SlavePools] - Master Depth: #{master_depth}"
+      logger.error "[SlavePools] - Current Value: #{current}"
+      logger.error "[SlavePools] - Current Pool: #{current_pool}"
+      logger.error "[SlavePools] - Current Pool Slaves: #{current_pool.slaves}" if current_pool
+      logger.error "[SlavePools] - Current Pool Name: #{current_pool.name}" if current_pool
       logger.error "[SlavePools] - Reconnect Value: #{@reconnect}"
       logger.error "[SlavePools] - Default Pool: #{default_pool}"
       logger.error "[SlavePools] - DB Method: #{db_method}"
