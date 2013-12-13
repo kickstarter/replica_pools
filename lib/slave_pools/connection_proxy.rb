@@ -46,16 +46,17 @@ module SlavePools
         self.environment   ||= (defined?(Rails.env) ? Rails.env : 'development')
 
         # if there are no slave pools, we just want to silently exit and not edit the ActiveRecord::Base.connection
-        if !slave_pools.empty?
-          master = ActiveRecord::Base
-          master.send :include, SlavePools::ActiveRecordExtensions
-          ActiveRecord::Observer.send :include, SlavePools::ObserverExtensions
-
-          master.connection_proxy = new(master, slave_pools)
-          SlavePools.logger.info("** slave_pools with master and #{slave_pools.length} slave_pool#{"s" if slave_pools.length > 1} (#{slave_pools.keys}) loaded.")
-        else
-          SlavePools.logger.info("No Slave Pools specified for this environment") #this is currently not logging
+        if slave_pools.empty?
+          SlavePools.logger.info("[SlavePools] No slave pools found for #{environment}")
+          return
         end
+
+        master = ActiveRecord::Base
+        master.send :include, SlavePools::ActiveRecordExtensions
+        ActiveRecord::Observer.send :include, SlavePools::ObserverExtensions
+
+        master.connection_proxy = new(master, slave_pools)
+        SlavePools.logger.info("[SlavePools] slave_pools with master and #{slave_pools.length} slave_pool#{"s" if slave_pools.length > 1} (#{slave_pools.keys}) loaded.")
       end
       private :new
 
