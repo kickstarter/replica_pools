@@ -62,17 +62,22 @@ module SlavePools
 
       protected
 
+      # each pool is a set of connection classes
       def init_slave_pools
-        slave_pools = {}
-        ActiveRecord::Base.configurations.each do |conn_name, db_config|
-          # look for dbs matching the slave_pool format and verify a test connection before adding it to the pools
-          if conn_name.to_s =~ /#{self.environment}_pool_(.*)_name_(.*)/ && connection_valid?(db_config)
-            pool_name, slave_name = $1, $2
-            slave_pools[$1] ||= []
-            slave_pools[$1] << connection_class($1, $2, conn_name)
+        Hash.new{|h, k| h[k] = [] }.tap do |pools|
+          slave_pool_configurations.each do |conn_name, pool_name, slave_name|
+            pools[pool_name] << connection_class(pool_name, slave_name, conn_name)
           end
         end
-        return slave_pools
+      end
+
+      # finds valid slave pool configs
+      def slave_pool_configurations
+        ActiveRecord::Base.configurations.map do |name, config|
+          next unless name.to_s =~ /#{environment}_pool_(.*)_name_(.*)/
+          next unless connection_valid?(config)
+          [name, $1, $2]
+        end.compact
       end
 
       private
