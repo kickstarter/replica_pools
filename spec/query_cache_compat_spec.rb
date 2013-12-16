@@ -2,7 +2,6 @@ require_relative 'spec_helper'
 
 describe SlavePools do
   before(:each) do
-    ActiveRecord::Base.configurations = SLAVE_POOLS_SPEC_CONFIG
     ActiveRecord::Base.establish_connection :test
 
     @sql = 'SELECT NOW()'
