@@ -1,13 +1,10 @@
 module SlavePools
   module ActiveRecordExtensions
     def self.included(base)
+      base.cattr_accessor :connection_proxy
+
       base.send :include, InstanceMethods
       base.send :extend, ClassMethods
-      base.cattr_accessor :connection_proxy
-      # handle subclasses which were defined by the framework or plugins
-      base.send(:descendants).each do |child|
-        child.hijack_connection
-      end
     end
 
     module InstanceMethods
@@ -32,20 +29,6 @@ module SlavePools
           yield
         else
           ActiveRecord::Base.connection.cache(&block)
-        end
-      end
-
-      def inherited(child)
-        super
-        child.hijack_connection
-      end
-
-      def hijack_connection
-        # logger.info "[SlavePools] hijacking connection for #{self.to_s}" # commenting out noisy logging
-        class << self
-          def connection
-            self.connection_proxy
-          end
         end
       end
     end
