@@ -190,12 +190,8 @@ Just add this to your controller:
 
 === Forcing the master for certain models
 
-In your environment.rb or an initializer, add this *before* the call to <tt>setup!</tt>:
+Not currently supported.
 
-  SlavePools.config.master_models = ['CGI::Session::ActiveRecordStore::Session', 'PaymentTransaction', ...]
-  SlavePools::ConnectionProxy.setup!
-
-*NOTE*: You cannot safely add more master_models after calling <tt>setup!</tt>.
 === Features
 * Minimalist implementation - does include sharding, doesn't creation a new adapter (so if you don't specify slaves for
   an environment, the connection is not overwritten, and the DB works as normal), doesn't blacklist/remove slaves,

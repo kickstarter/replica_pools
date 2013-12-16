@@ -6,11 +6,8 @@ describe SlavePools do
     ActiveRecord::Base.establish_connection :test
 
     ActiveRecord::Migration.verbose = false
-    ActiveRecord::Migration.create_table(:master_models, :force => true) {}
     ActiveRecord::Migration.create_table(:foo_models, :force => true) {|t| t.string :bar}
-    class MasterModel < ActiveRecord::Base; end
     class FooModel < ActiveRecord::Base; end
-    SlavePools.config.master_models = ['MasterModel']
 
     @sql = 'SELECT NOW()'
 
@@ -28,10 +25,6 @@ describe SlavePools do
 
   it 'FooModel#connection should return an instance of SlavePools::ConnectionProxy' do
     FooModel.connection.should be_kind_of(SlavePools::ConnectionProxy)
-  end
-
-  it 'MasterModel#connection should not return an instance of SlavePools::ConnectionProxy' do
-    MasterModel.connection.should_not be_kind_of(SlavePools::ConnectionProxy)
   end
 
   it "should generate classes for each entry in the database.yml" do
