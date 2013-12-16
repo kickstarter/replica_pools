@@ -1,5 +1,5 @@
 module SlavePools
-  class SlavePool
+  class Pool
     attr_reader :name, :slaves, :current, :size
 
     def initialize(name, slaves)

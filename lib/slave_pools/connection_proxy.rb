@@ -52,7 +52,7 @@ module SlavePools
 
     def initialize(master, slave_pools)
       @slave_pools = slave_pools.inject({}) do |h, (name, pool)|
-        h.merge!(name.to_sym => SlavePool.new(name, pool))
+        h.merge!(name.to_sym => SlavePools::Pool.new(name, pool))
       end
       @master       = master
       @master_depth = 0
