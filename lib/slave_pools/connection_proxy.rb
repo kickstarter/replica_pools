@@ -23,7 +23,6 @@ module SlavePools
 
         master = ActiveRecord::Base
         master.send :include, SlavePools::ActiveRecordExtensions
-        ActiveRecord::Observer.send :include, SlavePools::ObserverExtensions
 
         master.connection_proxy = new(master, slave_pools)
         SlavePools.logger.info("[SlavePools] slave_pools with master and #{slave_pools.length} slave_pool#{"s" if slave_pools.length > 1} (#{slave_pools.keys}) loaded.")
