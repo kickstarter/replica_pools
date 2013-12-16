@@ -2,8 +2,6 @@ require 'rubygems'
 require 'bundler/setup'
 require 'logger'
 
-require 'slave_pools'
-
 module Rails
   def self.env
     ActiveSupport::StringInquirer.new("test")
@@ -13,6 +11,9 @@ module Rails
     MAJOR = 3
   end
 end
+
+require 'slave_pools'
+SlavePools::Engine.initializers.each(&:run)
 
 spec_dir = File.dirname(__FILE__)
 ActiveRecord::Base.logger = Logger.new(spec_dir + "/debug.log")

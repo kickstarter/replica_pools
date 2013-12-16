@@ -6,6 +6,9 @@ require 'slave_pools/observer_extensions'
 require 'slave_pools/query_cache_compat'
 require 'slave_pools/connection_proxy'
 
+require 'slave_pools/engine' if defined? Rails
+ActiveRecord::Observer.send :include, SlavePools::ObserverExtensions
+
 module SlavePools
   class << self
     def setup!

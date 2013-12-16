@@ -12,7 +12,7 @@ module SlavePools
     attr_accessor :safe_methods
 
     def initialize
-      @environment        = (defined?(Rails.env) ? Rails.env : 'development')
+      @environment        = 'development'
       @defaults_to_master = false
       @safe_methods       = default_safe_methods
     end

@@ -17,5 +17,3 @@ module SlavePools
     end
   end
 end
-
-ActiveRecord::Observer.send :include, SlavePools::ObserverExtensions
