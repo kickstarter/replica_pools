@@ -7,7 +7,7 @@ describe SlavePools do
     @sql = 'SELECT NOW()'
 
     SlavePools::ConnectionProxy.setup!
-    @proxy = ActiveRecord::Base.connection_proxy
+    @proxy = SlavePools.proxy
     @master = @proxy.master.retrieve_connection
 
     create_slave_aliases(@proxy)

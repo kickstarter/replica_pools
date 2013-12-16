@@ -29,7 +29,7 @@ describe SlavePools do
   describe "with setup" do
     before(:each) do
       SlavePools.setup!
-      @proxy = ActiveRecord::Base.connection_proxy
+      @proxy = SlavePools.proxy
     end
 
     it 'should send next_slave! call to connection proxy' do

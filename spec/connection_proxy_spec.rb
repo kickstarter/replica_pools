@@ -15,13 +15,14 @@ describe SlavePools do
     @sql = 'SELECT NOW()'
 
     SlavePools::ConnectionProxy.setup!
-    @proxy = ActiveRecord::Base.connection_proxy
+    @proxy = SlavePools.proxy
     @master = @proxy.master.retrieve_connection
 
     create_slave_aliases(@proxy)
   end
 
   it 'AR::B should respond to #connection_proxy' do
+    ActiveRecord::Base.should respond_to(:connection_proxy)
     ActiveRecord::Base.connection_proxy.should be_kind_of(SlavePools::ConnectionProxy)
   end
 
