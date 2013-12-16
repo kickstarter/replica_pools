@@ -1,16 +1,12 @@
 module SlavePools
   module ActiveRecordExtensions
     def self.included(base)
-      base.cattr_accessor :connection_proxy
-
-      base.send :include, InstanceMethods
       base.send :extend, ClassMethods
+      base.cattr_accessor :connection_proxy
     end
 
-    module InstanceMethods
-      def reload(options = nil)
-        self.connection_proxy.with_master { super }
-      end
+    def reload(options = nil)
+      self.connection_proxy.with_master { super }
     end
 
     module ClassMethods
