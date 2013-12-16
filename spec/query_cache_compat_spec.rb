@@ -4,27 +4,14 @@ describe SlavePools do
   before(:each) do
     ActiveRecord::Base.configurations = SLAVE_POOLS_SPEC_CONFIG
     ActiveRecord::Base.establish_connection :test
-    ActiveRecord::Migration.verbose = false
-    ActiveRecord::Migration.create_table(:master_models, :force => true) {}
-    class MasterModel < ActiveRecord::Base; end
-    ActiveRecord::Migration.create_table(:foo_models, :force => true) {|t| t.string :bar}
-    class FooModel < ActiveRecord::Base; end
+
     @sql = 'SELECT NOW()'
 
-    SlavePools.config.master_models = ['MasterModel']
     SlavePools::ConnectionProxy.setup!
     @proxy = ActiveRecord::Base.connection_proxy
-    @slave_pool_hash = @proxy.slave_pools
-    @slave_pool_array = @slave_pool_hash.values
     @master = @proxy.master.retrieve_connection
-    # creates instance variables (@default_slave1, etc.) for each slave based on the order they appear in the slave_pool
-    # ruby 1.8.7 doesn't support ordered hashes, so we assign numbers to the slaves this way, and not the order in the yml file
-    # to prevent @default_slave1 from being different on different systems
-    ['default', 'secondary'].each do |pool_name|
-      @slave_pool_hash[pool_name.to_sym].slaves.each_with_index do |slave, i|
-        instance_variable_set("@#{pool_name}_slave#{i + 1}", slave.retrieve_connection)
-      end
-    end
+
+    create_slave_aliases(@proxy)
   end
 
   it 'should cache queries using select_all' do
