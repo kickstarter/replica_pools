@@ -48,12 +48,13 @@ module SlavePools
     end
 
     def with_pool(pool_name = 'default')
+      last_conn, last_pool = self.current, self.current_pool
       self.current_pool = slave_pools[pool_name.to_sym] || default_pool
       self.current = current_slave unless within_master_block?
       yield
     ensure
-      self.current_pool = default_pool
-      self.current = current_slave unless within_master_block?
+      self.current_pool = last_pool
+      self.current      = last_conn
     end
 
     def with_master

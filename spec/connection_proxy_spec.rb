@@ -244,6 +244,29 @@ describe SlavePools do
         end
       end
     end
+
+    it "should switch back to previous pool and slave" do
+      @proxy.next_slave!
+
+      @proxy.current_pool.name.should eq('default')
+      @proxy.current.name.should eq('SlavePools::DefaultDb2')
+
+      @proxy.with_pool('secondary') do
+        @proxy.current_pool.name.should eq('secondary')
+        @proxy.current.name.should eq('SlavePools::SecondaryDb1')
+
+        @proxy.with_pool('default') do
+          @proxy.current_pool.name.should eq('default')
+          @proxy.current.name.should eq('SlavePools::DefaultDb2')
+        end
+
+        @proxy.current_pool.name.should eq('secondary')
+        @proxy.current.name.should eq('SlavePools::SecondaryDb1')
+      end
+
+      @proxy.current_pool.name.should eq('default')
+      @proxy.current.name.should eq('SlavePools::DefaultDb2')
+    end
   end
 end
 
