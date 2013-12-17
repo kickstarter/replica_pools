@@ -3,12 +3,6 @@ require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 describe SlavePools do
 
   before(:each) do
-    ActiveRecord::Base.establish_connection :test
-
-    ActiveRecord::Migration.verbose = false
-    ActiveRecord::Migration.create_table(:test_models, :force => true) {}
-#    ActiveRecord::Migration.create_table(:test_subs, :force => true) {|t| t.integer :test_model_id}
-
     @sql = 'SELECT NOW()'
 
     @proxy = SlavePools.proxy

@@ -4,13 +4,7 @@ require File.expand_path(File.dirname(__FILE__) + '/config/test_model')
 describe SlavePools do
 
   before(:each) do
-    ActiveRecord::Base.establish_connection :test
-
-    ActiveRecord::Migration.verbose = false
-    ActiveRecord::Migration.create_table(:test_models, :force => true) {}
-    ActiveRecord::Migration.create_table(:test_subs, :force => true) {|t| t.integer :test_model_id}
-
-    SlavePools.pools.each{|_, pool| pool.reset }
+    reset_proxy(SlavePools.proxy)
     @observer = TestModelObserver.instance
 
     @test_model = TestModel.create

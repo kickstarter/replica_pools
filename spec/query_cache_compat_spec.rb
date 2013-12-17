@@ -2,12 +2,12 @@ require_relative 'spec_helper'
 
 describe SlavePools do
   before(:each) do
-    ActiveRecord::Base.establish_connection :test
-
     @sql = 'SELECT NOW()'
 
     @proxy = SlavePools.proxy
     @master = @proxy.master.retrieve_connection
+
+    @master.clear_query_cache
 
     reset_proxy(@proxy)
     create_slave_aliases(@proxy)
@@ -30,6 +30,7 @@ describe SlavePools do
       meths.each do |meth|
         @master.should_receive(meth).and_return(true)
       end
+
       @default_slave1.should_receive(:select_all).exactly(5).and_return([])
       @default_slave2.should_receive(:select_all).exactly(0)
       5.times do |i|
@@ -64,6 +65,7 @@ describe SlavePools do
         meths.each do |meth|
           @master.should_receive(meth).and_return(true)
         end
+
         @default_slave1.should_receive(:select_all).exactly(5).and_return([])
         @default_slave2.should_receive(:select_all).exactly(0)
         5.times do |i|
