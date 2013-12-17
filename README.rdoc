@@ -30,9 +30,6 @@ Specify a different slave pool than the default:
 Specifically use the master for a call:
   SlavePools.with_master { #do stuff }
 
-Determine if the proxy is set up:
-  SlavePools.active?
-
 The gem, by default, sends writes and reads to the master and slave databases, respectfully. But in your app, if you write to the master during a request, you will probably want to read from the master in that request as well, in case there is replication. You will also probably want to read from the master on the next request (after a write to the master) to cover redirects.
 
 Using a standard rails application setup, you can achieve this by adding these example methods to your application controller (some of these may be folded in the gem, but leaving out for now):

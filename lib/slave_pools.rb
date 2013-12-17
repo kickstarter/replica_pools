@@ -35,28 +35,16 @@ module SlavePools
       )
     end
 
-    def active?
-      !! ActiveRecord::Base.connection_proxy
-    end
-
     def next_slave!
       proxy.try(:next_slave!)
     end
 
     def with_pool(pool_name = 'default')
-      if active?
-        proxy.with_pool(pool_name) { yield }
-      else
-        yield
-      end
+      proxy.with_pool(pool_name) { yield }
     end
 
     def with_master
-      if active?
-        proxy.with_master { yield }
-      else
-        yield
-      end
+      proxy.with_master { yield }
     end
 
     def current

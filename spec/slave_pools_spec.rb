@@ -7,14 +7,6 @@ describe SlavePools do
     @proxy = SlavePools.proxy
   end
 
-  it 'should be active with proxy' do
-    ActiveRecord::Base.should_receive(:connection_proxy).and_return(nil)
-    SlavePools.active?.should_not be
-
-    ActiveRecord::Base.should_receive(:connection_proxy).and_return(true)
-    SlavePools.active?.should be
-  end
-
   it 'should delegate next_slave! call to connection proxy' do
     @proxy.should_receive(:next_slave!).exactly(1)
     SlavePools.next_slave!
