@@ -6,6 +6,10 @@ module SlavePools
       @name    = name
       @slaves  = slaves
       @size    = slaves.size
+      self.reset
+    end
+
+    def reset
       @cycle   = slaves.cycle
       self.next
     end

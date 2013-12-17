@@ -5,13 +5,18 @@ module SlavePools
     include Enumerable
 
     def initialize
-      @pools = Hash.new{|h, k| h[k] = [] }
-
+      # group the pools by name
+      pools = Hash.new{|h, k| h[k] = [] }
       slave_pool_configurations.each do |conn_name, pool_name, slave_name|
-        @pools[pool_name] << connection_class(pool_name, slave_name, conn_name)
+        pools[pool_name] << connection_class(pool_name, slave_name, conn_name)
       end
 
-      super @pools
+      # typecast
+      pools = pools.keys.inject({}) do |h, name|
+        h.merge! name.to_sym => SlavePools::Pool.new(name, pools[name])
+      end
+
+      super pools
     end
 
     private

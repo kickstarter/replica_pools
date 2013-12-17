@@ -28,6 +28,7 @@ describe SlavePools do
 
   describe "with setup" do
     before(:each) do
+      SlavePools.pools.each{|_, pool| pool.reset }
       SlavePools.setup!
       @proxy = SlavePools.proxy
     end
