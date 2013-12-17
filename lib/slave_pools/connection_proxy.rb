@@ -38,7 +38,7 @@ module SlavePools
         @current = @master
         @master_depth = 1
       else
-        @current = slave
+        @current = current_slave
       end
 
       # this ivar is for ConnectionAdapter compatibility
@@ -49,11 +49,11 @@ module SlavePools
 
     def with_pool(pool_name = 'default')
       self.current_pool = slave_pools[pool_name.to_sym] || default_pool
-      self.current = slave unless within_master_block?
+      self.current = current_slave unless within_master_block?
       yield
     ensure
       self.current_pool = default_pool
-      self.current = slave unless within_master_block?
+      self.current = current_slave unless within_master_block?
     end
 
     def with_master
@@ -62,7 +62,7 @@ module SlavePools
       yield
     ensure
       self.master_depth = [master_depth - 1, 0].max # ensure that master depth never gets below 0
-      self.current = slave unless within_master_block?
+      self.current = current_slave unless within_master_block?
     end
 
     def transaction(*args, &block)
@@ -80,7 +80,7 @@ module SlavePools
 
     protected
 
-    def slave
+    def current_slave
       current_pool.current
     end
 
