@@ -8,10 +8,10 @@ describe SlavePools do
   end
 
   it 'should be active with proxy' do
-    SlavePools.should_receive(:proxy).and_return(nil)
+    ActiveRecord::Base.should_receive(:connection_proxy).and_return(nil)
     SlavePools.active?.should_not be
 
-    SlavePools.should_receive(:proxy).and_return(true)
+    ActiveRecord::Base.should_receive(:connection_proxy).and_return(true)
     SlavePools.active?.should be
   end
 
