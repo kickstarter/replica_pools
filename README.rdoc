@@ -30,7 +30,7 @@ Specify a different slave pool than the default:
 Specifically use the master for a call:
   SlavePools.with_master { #do stuff }
 
-Determine if there are slaves:
+Determine if the proxy is set up:
   SlavePools.active?
 
 The gem, by default, sends writes and reads to the master and slave databases, respectfully. But in your app, if you write to the master during a request, you will probably want to read from the master in that request as well, in case there is replication. You will also probably want to read from the master on the next request (after a write to the master) to cover redirects.
@@ -44,15 +44,11 @@ Using a standard rails application setup, you can achieve this by adding these e
     after_filter    :switch_to_next_slave
 
     def switch_to_next_slave
-      SlavePools.next_slave! if slaves?
-    end
-
-    def use_admin_slave_pool
-      SlavePools.with_pool('admin') { yield } if slaves?
+      SlavePools.next_slave!
     end
 
     def stick_to_master_for_updates
-      if slaves? && (request.post? || request.put? || request.delete?)
+      if request.post? || request.put? || request.delete?
         SlavePools.with_master { yield }
         session[:stick_to_master] = 1
       else
@@ -61,25 +57,12 @@ Using a standard rails application setup, you can achieve this by adding these e
     end
 
     def use_master_for_redirect
-      if slaves? && session[:stick_to_master]
+      if session[:stick_to_master]
         session[:stick_to_master] = nil
         SlavePools.with_master { yield }
       else
         yield
       end
-    end
-
-    def use_master
-      if slaves?
-        SlavePools.with_master { yield }
-        session[:stick_to_master] = 1
-      else
-        yield
-      end
-    end
-
-    def slaves?
-      SlavePools.active?
     end
   end
 
@@ -91,6 +74,13 @@ For other cases where you use the master for writes, you should wrap the request
     def index
       Activity.create()
       # index is a GET call, but we've decided to record something, so we want to wrap it in a use_master block
+    end
+
+    protected
+
+    def use_master
+      SlavePools.with_master { yield }
+      session[:stick_to_master] = 1
     end
   end
 
@@ -133,19 +123,7 @@ This also creates an abstract classes named <tt>SlavePools::DefaultDb1</tt> for 
 
 For development testing, I recommend creating a read-only mysql user and just point all of your slave DB's to the your development DB using the read-only user.
 
-The Default SlavePool will be used for all requests, so you should name on of the pools 'default' (if there isn't a 'default' slave_pool, the first slave_pool specified becomes the default)
-
-To enable the proxy globally, add this to a config/initializers:
-
-  SlavePools.setup!
-
-If you only want to enable it for specific environments, add this to
-the corresponding file in config/environments:
-
-  config.after_initialize do
-    SlavePools.setup!
-  end
-
+The Default SlavePool will be used for all requests, so you should name one of the pools 'default' (if there isn't a 'default' slave_pool, the first slave_pool specified becomes the default)
 
 === Using with Phusion Passenger
 
@@ -172,7 +150,6 @@ To make it work, add this to your <tt>environment.rb</tt> or an initializer scri
 === Using with ThinkingSphinx
 
 ThinkingSphinx looks for an adapter type and
-  SlavePools.setup!
 
   if ActiveRecord::Base.respond_to?('connection_proxy')
     ThinkingSphinx::AbstractAdapter.class_eval do

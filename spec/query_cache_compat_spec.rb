@@ -6,11 +6,10 @@ describe SlavePools do
 
     @sql = 'SELECT NOW()'
 
-    SlavePools.pools.each{|_, pool| pool.reset }
-    SlavePools.setup!
     @proxy = SlavePools.proxy
     @master = @proxy.master.retrieve_connection
 
+    reset_proxy(@proxy)
     create_slave_aliases(@proxy)
   end
 

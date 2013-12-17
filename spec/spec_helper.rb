@@ -12,12 +12,14 @@ module Rails
   end
 end
 
-require 'slave_pools'
-SlavePools::Engine.initializers.each(&:run)
-
+require 'active_record'
 spec_dir = File.dirname(__FILE__)
 ActiveRecord::Base.logger = Logger.new(spec_dir + "/debug.log")
 ActiveRecord::Base.configurations = YAML::load(File.open(spec_dir + '/config/database.yml'))
+
+require 'slave_pools'
+SlavePools::Engine.initializers.each(&:run)
+ActiveSupport.run_load_hooks(:after_initialize, SlavePools::Engine)
 
 module SlavePools::Testing
   # Creates aliases for the slave connections in each pool
@@ -28,6 +30,12 @@ module SlavePools::Testing
         instance_variable_set("@#{name}_slave#{i + 1}", slave.retrieve_connection)
       end
     end
+  end
+
+  def reset_proxy(proxy)
+    proxy.slave_pools.each{|_, pool| pool.reset }
+    proxy.current_pool = proxy.slave_pools[:default]
+    proxy.current      = proxy.current_slave
   end
 end
 

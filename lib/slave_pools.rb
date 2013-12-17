@@ -10,22 +10,19 @@ require 'slave_pools/connection_proxy'
 
 require 'slave_pools/engine' if defined? Rails
 ActiveRecord::Observer.send :include, SlavePools::ObserverExtensions
+ActiveRecord::Base.send :include, SlavePools::ActiveRecordExtensions
 
 module SlavePools
   class << self
     def setup!
       if SlavePools.pools.empty?
-        SlavePools.logger.info("[SlavePools] No pools found for #{SlavePools.config.environment}")
-        return
+        SlavePools.logger.info("[SlavePools] No pools found for #{SlavePools.config.environment}. Loading a master pool instead.")
+        SlavePools.pools['master'] = SlavePools::SlavePool.new('master', [ActiveRecord::Base])
       end
 
       ConnectionProxy.generate_safe_delegations
 
-      ActiveRecord::Base.class_eval do
-        include SlavePools::ActiveRecordExtensions
-        extend  SlavePools::Hijack
-      end
-
+      ActiveRecord::Base.send(:extend, SlavePools::Hijack)
       ActiveRecord::Base.connection_proxy = SlavePools::ConnectionProxy.new(
         ActiveRecord::Base,
         SlavePools.pools
@@ -35,11 +32,11 @@ module SlavePools
     end
 
     def proxy
-      ActiveRecord::Base.connection_proxy if active?
+      ActiveRecord::Base.connection_proxy
     end
 
     def active?
-      ActiveRecord::Base.respond_to?('connection_proxy')
+      !! proxy
     end
 
     def next_slave!

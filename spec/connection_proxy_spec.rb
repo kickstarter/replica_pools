@@ -11,11 +11,10 @@ describe SlavePools do
 
     @sql = 'SELECT NOW()'
 
-    SlavePools.pools.each{|_, pool| pool.reset }
-    SlavePools.setup!
     @proxy = SlavePools.proxy
     @master = @proxy.master.retrieve_connection
 
+    reset_proxy(@proxy)
     create_slave_aliases(@proxy)
   end
 
@@ -136,9 +135,11 @@ describe SlavePools do
   end
 
   it 'should dynamically generate unsafe methods' do
-    @proxy.should_not respond_to(:execute)
-    @proxy.execute(@sql)
-    @proxy.should respond_to(:execute)
+    @master.should_receive(:unsafe).and_return(true)
+
+    @proxy.should_not respond_to(:unsafe)
+    @proxy.unsafe(@sql)
+    @proxy.should respond_to(:unsafe)
   end
 
   it 'should NOT rescue a non Mysql2::Error' do
