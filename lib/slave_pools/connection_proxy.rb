@@ -19,11 +19,11 @@ module SlavePools
       protected
 
       def generate_safe_delegation(method)
-        class_eval %Q{
+        class_eval <<-END, __FILE__, __LINE__ + 1
           def #{method}(*args, &block)
             send_to_current(:#{method}, *args, &block)
           end
-        }, __FILE__, __LINE__
+        END
       end
     end
 
@@ -102,11 +102,11 @@ module SlavePools
     end
 
     def generate_unsafe_delegation(method)
-      self.instance_eval %Q{
+      self.class_eval <<-END, __FILE__, __LINE__ + 1
         def #{method}(*args, &block)
           send_to_master(:#{method}, *args, &block)
         end
-      }, __FILE__, __LINE__
+      END
     end
 
     def send_to_master(method, *args, &block)
