@@ -35,8 +35,7 @@ module SlavePools
       @current_pool = default_pool
 
       if SlavePools.config.defaults_to_master
-        @current = @master
-        @master_depth = 1
+        @current = master
       else
         @current = current_slave
       end
