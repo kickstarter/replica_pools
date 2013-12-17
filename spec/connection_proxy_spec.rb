@@ -6,8 +6,8 @@ describe SlavePools do
     ActiveRecord::Base.establish_connection :test
 
     ActiveRecord::Migration.verbose = false
-    ActiveRecord::Migration.create_table(:foo_models, :force => true) {|t| t.string :bar}
-    class FooModel < ActiveRecord::Base; end
+    ActiveRecord::Migration.create_table(:test_models, :force => true) {}
+#    ActiveRecord::Migration.create_table(:test_subs, :force => true) {|t| t.integer :test_model_id}
 
     @sql = 'SELECT NOW()'
 
@@ -23,8 +23,8 @@ describe SlavePools do
     ActiveRecord::Base.connection_proxy.should be_kind_of(SlavePools::ConnectionProxy)
   end
 
-  it 'FooModel#connection should return an instance of SlavePools::ConnectionProxy' do
-    FooModel.connection.should be_kind_of(SlavePools::ConnectionProxy)
+  it 'TestModel#connection should return an instance of SlavePools::ConnectionProxy' do
+    TestModel.connection.should be_kind_of(SlavePools::ConnectionProxy)
   end
 
   it "should generate classes for each entry in the database.yml" do
@@ -172,13 +172,11 @@ describe SlavePools do
   end
 
   it 'should reload models from the master' do
-    foo = FooModel.create!(:bar => 'baz')
-    foo.bar = "not_saved"
+    foo = TestModel.create!
+    @master.should_receive(:select_all).and_return([{'id' => foo.id}])
     @default_slave1.should_not_receive(:select_all)
     @default_slave2.should_not_receive(:select_all)
     foo.reload
-    # we didn't stub @master#select_all here, check that we actually hit the db
-    foo.bar.should == 'baz'
   end
 
   context "with_pool" do
