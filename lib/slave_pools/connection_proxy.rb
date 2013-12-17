@@ -10,35 +10,13 @@ module SlavePools
     attr_accessor :master_depth, :current, :current_pool, :slave_pools
 
     class << self
-      # Replaces the connection of ActiveRecord::Base with a proxy and
-      # establishes the connections to the slaves.
-      def setup!
-        slave_pools = SlavePools.pools
-
-        # if there are no slave pools, we just want to silently exit and not edit the ActiveRecord::Base.connection
-        if slave_pools.empty?
-          SlavePools.logger.info("[SlavePools] No slave pools found for #{SlavePools.config.environment}")
-          return
-        end
-
-        generate_safe_delegations
-
-        master = ActiveRecord::Base
-        master.send :include, SlavePools::ActiveRecordExtensions
-        master.send :extend, SlavePools::Hijack
-
-        master.connection_proxy = new(master, slave_pools)
-        SlavePools.logger.info("[SlavePools] slave_pools with master and #{slave_pools.length} slave_pool#{"s" if slave_pools.length > 1} (#{slave_pools.keys}) loaded.")
-      end
-      private :new
-
-      protected
-
       def generate_safe_delegations
         SlavePools.config.safe_methods.each do |method|
           generate_safe_delegation(method) unless instance_methods.include?(method)
         end
       end
+
+      protected
 
       def generate_safe_delegation(method)
         class_eval %Q{
@@ -47,8 +25,7 @@ module SlavePools
           end
         }, __FILE__, __LINE__
       end
-
-    end # end class << self
+    end
 
     def initialize(master, slave_pools)
       @master       = master

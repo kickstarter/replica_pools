@@ -12,7 +12,7 @@ describe SlavePools do
     @sql = 'SELECT NOW()'
 
     SlavePools.pools.each{|_, pool| pool.reset }
-    SlavePools::ConnectionProxy.setup!
+    SlavePools.setup!
     @proxy = SlavePools.proxy
     @master = @proxy.master.retrieve_connection
 

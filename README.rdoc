@@ -161,18 +161,18 @@ To make it work, add this to your <tt>environment.rb</tt> or an initializer scri
     PhusionPassenger.on_event(:starting_worker_process) do |forked|
       if forked
         # ... set configuration options, if any ...
-        SlavePools::ConnectionProxy.setup!
+        SlavePools.setup!
       end
     end
   else # not using passenger (e.g. development/testing)
     # ... set configuration options, if any ...
-    SlavePools::ConnectionProxy.setup!
+    SlavePools.setup!
   end
 
 === Using with ThinkingSphinx
 
 ThinkingSphinx looks for an adapter type and
-  SlavePools::ConnectionProxy.setup!
+  SlavePools.setup!
 
   if ActiveRecord::Base.respond_to?('connection_proxy')
     ThinkingSphinx::AbstractAdapter.class_eval do

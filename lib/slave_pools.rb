@@ -14,7 +14,24 @@ ActiveRecord::Observer.send :include, SlavePools::ObserverExtensions
 module SlavePools
   class << self
     def setup!
-      SlavePools::ConnectionProxy.setup!
+      if SlavePools.pools.empty?
+        SlavePools.logger.info("[SlavePools] No pools found for #{SlavePools.config.environment}")
+        return
+      end
+
+      ConnectionProxy.generate_safe_delegations
+
+      ActiveRecord::Base.class_eval do
+        include SlavePools::ActiveRecordExtensions
+        extend  SlavePools::Hijack
+      end
+
+      ActiveRecord::Base.connection_proxy = SlavePools::ConnectionProxy.new(
+        ActiveRecord::Base,
+        SlavePools.pools
+      )
+
+      SlavePools.logger.info("[SlavePools] Proxy loaded with: #{SlavePools.pools.keys.join(', ')}")
     end
 
     def proxy

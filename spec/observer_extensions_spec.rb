@@ -11,7 +11,7 @@ describe SlavePools do
     ActiveRecord::Migration.create_table(:test_subs, :force => true) {|t| t.integer :test_model_id}
 
     SlavePools.pools.each{|_, pool| pool.reset }
-    SlavePools::ConnectionProxy.setup!
+    SlavePools.setup!
     @observer = TestModelObserver.instance
 
     @test_model = TestModel.create
