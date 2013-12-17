@@ -56,6 +56,14 @@ describe SlavePools do
       end
       @proxy.current.should equal(@proxy.master)
     end
+
+    it 'should know when in block' do
+      @proxy.send(:within_master_block?).should_not be
+      @proxy.with_master do
+        @proxy.send(:within_master_block?).should be
+      end
+      @proxy.send(:within_master_block?).should_not be
+    end
   end
 
   it 'should perform transactions on the master' do
@@ -76,35 +84,32 @@ describe SlavePools do
     @proxy.select_all(@sql)
   end
 
-  it 'should not switch to the next reader on selects' do
+  it 'should not switch slaves automatically on selects' do
     @default_slave1.should_receive(:select_one).exactly(6)
     @default_slave2.should_receive(:select_one).exactly(0)
     6.times { @proxy.select_one(@sql) }
   end
 
-  it '#next_slave! should switch to the next slave' do
-    @default_slave1.should_receive(:select_one).exactly(3)
-    @default_slave2.should_receive(:select_one).exactly(7)
-    3.times { @proxy.select_one(@sql) }
-    @proxy.next_slave!
-    7.times { @proxy.select_one(@sql) }
-  end
+  context "next_slave!" do
+    it 'should switch to the next slave' do
+      @default_slave1.should_receive(:select_one).exactly(1)
+      @default_slave2.should_receive(:select_one).exactly(1)
 
-  it 'should switch if next reader is explicitly called' do
-    @default_slave1.should_receive(:select_one).exactly(3)
-    @default_slave2.should_receive(:select_one).exactly(3)
-    6.times do
       @proxy.select_one(@sql)
       @proxy.next_slave!
+      @proxy.select_one(@sql)
     end
-  end
 
-  it 'should not switch to the next reader when whithin a with_master-block' do
-    @master.should_receive(:select_one).twice
-    @default_slave1.should_not_receive(:select_one)
-    @default_slave2.should_not_receive(:select_one)
-    @proxy.with_master do
-      2.times { @proxy.select_one(@sql) }
+    it 'should not switch when in a with_master-block' do
+      @master.should_receive(:select_one).exactly(2)
+      @default_slave1.should_not_receive(:select_one)
+      @default_slave2.should_not_receive(:select_one)
+
+      @proxy.with_master do
+        @proxy.select_one(@sql)
+        @proxy.next_slave!
+        @proxy.select_one(@sql)
+      end
     end
   end
 
