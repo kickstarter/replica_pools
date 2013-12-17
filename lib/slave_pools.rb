@@ -58,7 +58,7 @@ module SlavePools
     end
 
     def pools
-      @pools ||= SlavePools::Pools.new
+      Thread.current[:slave_pools] ||= SlavePools::Pools.new
     end
   end
 end
