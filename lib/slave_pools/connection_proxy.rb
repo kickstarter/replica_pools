@@ -58,12 +58,13 @@ module SlavePools
     end
 
     def with_master
+      last_conn = self.current
       self.current = master
       self.master_depth += 1
       yield
     ensure
       self.master_depth = [master_depth - 1, 0].max # ensure that master depth never gets below 0
-      self.current = current_slave unless within_master_block?
+      self.current = last_conn
     end
 
     def transaction(*args, &block)
@@ -79,11 +80,11 @@ module SlavePools
       self.current = master
     end
 
-    protected
-
     def current_slave
       current_pool.current
     end
+
+    protected
 
     def default_pool
       slave_pools[:default] || slave_pools.values.first #if there is no default specified, use the first pool found

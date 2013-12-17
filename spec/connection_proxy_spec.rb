@@ -40,20 +40,22 @@ describe SlavePools do
     defined?(SlavePools::DefaultFakeDb).should be_nil
   end
 
-  it 'should handle nested with_master-blocks correctly' do
-    @proxy.current.should_not == @proxy.master
-    @proxy.with_master do
-      @proxy.current.should == @proxy.master
+  context "with_master" do
+    it 'should revert to previous slave connection' do
+      @proxy.current = @proxy.current_slave
       @proxy.with_master do
-        @proxy.current.should == @proxy.master
-        @proxy.with_master do
-          @proxy.current.should == @proxy.master
-        end
-        @proxy.current.should == @proxy.master
+        @proxy.current.should equal(@proxy.master)
       end
-      @proxy.current.should == @proxy.master
+      @proxy.current.name.should eq('SlavePools::DefaultDb1')
     end
-    @proxy.current.should_not == @proxy.master
+
+    it 'should revert to previous master connection' do
+      @proxy.current = @proxy.master
+      @proxy.with_master do
+        @proxy.current.should equal(@proxy.master)
+      end
+      @proxy.current.should equal(@proxy.master)
+    end
   end
 
   it 'should perform transactions on the master' do
@@ -173,7 +175,7 @@ describe SlavePools do
     foo.bar.should == 'baz'
   end
 
-  context "Using with_pool call" do
+  context "with_pool" do
 
     it "should switch to default pool if an invalid pool is specified" do
       @default_slave1.should_receive(:select_one).exactly(3)
