@@ -1,6 +1,6 @@
 require_relative 'spec_helper'
 
-describe SlavePools do
+describe SlavePools::QueryCache do
   before(:each) do
     @sql = 'SELECT NOW()'
 
@@ -28,7 +28,7 @@ describe SlavePools do
     ActiveRecord::Base.cache do
       meths = [:insert, :update, :delete, :insert, :update]
       meths.each do |meth|
-        @master.should_receive(meth).and_return(true)
+        @master.should_receive("exec_#{meth}").and_return(true)
       end
 
       @default_slave1.should_receive(:select_all).exactly(5).and_return([])
@@ -37,7 +37,7 @@ describe SlavePools do
         @proxy.select_all(@sql)
         @proxy.select_all(@sql)
         @master.query_cache.keys.size.should == 1
-        @proxy.send(meths[i])
+        @proxy.send(meths[i], '')
         @master.query_cache.keys.size.should == 0
       end
     end
@@ -63,7 +63,7 @@ describe SlavePools do
       mw = ActiveRecord::QueryCache.new lambda { |env|
         meths = [:insert, :update, :delete, :insert, :update]
         meths.each do |meth|
-          @master.should_receive(meth).and_return(true)
+          @master.should_receive("exec_#{meth}").and_return(true)
         end
 
         @default_slave1.should_receive(:select_all).exactly(5).and_return([])
@@ -72,7 +72,7 @@ describe SlavePools do
           @proxy.select_all(@sql)
           @proxy.select_all(@sql)
           @master.query_cache.keys.size.should == 1
-          @proxy.send(meths[i])
+          @proxy.send(meths[i], '')
           @master.query_cache.keys.size.should == 0
         end
       }

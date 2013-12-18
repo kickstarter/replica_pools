@@ -5,7 +5,7 @@ require 'slave_pools/pools'
 require 'slave_pools/active_record_extensions'
 require 'slave_pools/hijack'
 require 'slave_pools/observer_extensions'
-require 'slave_pools/query_cache_compat'
+require 'slave_pools/query_cache'
 require 'slave_pools/connection_proxy'
 
 require 'slave_pools/engine' if defined? Rails

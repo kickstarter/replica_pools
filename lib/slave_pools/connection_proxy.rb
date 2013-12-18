@@ -3,8 +3,7 @@ require 'set'
 
 module SlavePools
   class ConnectionProxy
-    include ActiveRecord::ConnectionAdapters::QueryCache
-    include QueryCacheCompat
+    include SlavePools::QueryCache
 
     attr_accessor :master
     attr_accessor :master_depth, :current, :current_pool, :slave_pools
