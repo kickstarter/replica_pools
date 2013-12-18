@@ -1,4 +1,6 @@
 module SlavePools
+  # The hijack is added to ActiveRecord::Base but only applies to
+  # its descendants. The Base.connection is left in place.
   module Hijack
     def self.extended(base)
       # hijack models that have already been loaded

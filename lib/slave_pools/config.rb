@@ -1,14 +1,16 @@
 module SlavePools
   class Config
-    # defaults to Rails.env if slave_pools is used with Rails
-    # defaults to 'development' when used outside Rails
+    # The current environment. Normally set to Rails.env, but
+    # will default to 'development' outside of Rails apps.
     attr_accessor :environment
 
-    # if master should be the default db
+    # When true, all queries will go to master unless wrapped in with_pool{}.
+    # When false, all safe queries will go to the current slave unless wrapped in with_master{}.
+    # Defaults to false.
     attr_accessor :defaults_to_master
 
-    # a list of methods that are safe to send to a readonly connection
-    # must be declared before setup!
+    # The list of methods considered safe to send to a readonly connection.
+    # Defaults are based on Rails version.
     attr_accessor :safe_methods
 
     def initialize
