@@ -1,8 +1,10 @@
 # -*- encoding: utf-8 -*-
 
+require_relative 'lib/slave_pools/version'
+
 Gem::Specification.new do |s|
   s.name = %q{slave_pools}
-  s.version = "0.1.2"
+  s.version = SlavePools::VERSION
   s.summary = "Connection proxy for ActiveRecord for master / replica setups."
   s.description = "Connection proxy for ActiveRecord for master / replica setups."
   s.license = 'MIT'
