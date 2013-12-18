@@ -5,7 +5,7 @@ module SlavePools
     attr_accessor :environment
 
     # When true, all queries will go to master unless wrapped in with_pool{}.
-    # When false, all safe queries will go to the current slave unless wrapped in with_master{}.
+    # When false, all safe queries will go to the current replica unless wrapped in with_master{}.
     # Defaults to false.
     attr_accessor :defaults_to_master
 

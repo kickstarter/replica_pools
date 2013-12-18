@@ -6,11 +6,11 @@ module SlavePools
 
     def initialize
       pools = {}
-      slave_pool_configurations.group_by{|_, name, _| name }.each do |name, set|
+      pool_configurations.group_by{|_, name, _| name }.each do |name, set|
         pools[name.to_sym] = SlavePools::Pool.new(
           name,
-          set.map{ |conn_name, _, slave_name|
-            connection_class(name, slave_name, conn_name)
+          set.map{ |conn_name, _, replica_name|
+            connection_class(name, replica_name, conn_name)
           }
         )
       end
@@ -20,8 +20,8 @@ module SlavePools
 
     private
 
-    # finds valid slave pool configs
-    def slave_pool_configurations
+    # finds valid pool configs
+    def pool_configurations
       ActiveRecord::Base.configurations.map do |name, config|
         next unless name.to_s =~ /#{SlavePools.config.environment}_pool_(.*)_name_(.*)/
         next unless connection_valid?(config)
@@ -29,9 +29,9 @@ module SlavePools
       end.compact
     end
 
-    # generates a unique ActiveRecord::Base subclass for a single slave
-    def connection_class(pool_name, slave_name, connection_name)
-      class_name = "#{pool_name.camelize}#{slave_name.camelize}"
+    # generates a unique ActiveRecord::Base subclass for a single replica
+    def connection_class(pool_name, replica_name, connection_name)
+      class_name = "#{pool_name.camelize}#{replica_name.camelize}"
 
       SlavePools.module_eval %Q{
         class #{class_name} < ActiveRecord::Base

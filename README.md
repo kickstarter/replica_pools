@@ -46,19 +46,19 @@ For example:
       host: localhost
 
     # Default pool for production environment
-    production_pool_default_name_slave1:
+    production_pool_default_name_replica1:
       adapter: mysql
-      database: slave_db1
+      database: replica_db1
       username: root
       password:
       host: 10.0.0.2
-    production_pool_default_name_slave2:
+    production_pool_default_name_replica2:
       ...
 
     # Special pool for production environment
-    production_pool_admin_name_slave1:
+    production_pool_admin_name_replica1:
       ...
-    production_pool_admin_name_another_slave:
+    production_pool_admin_name_another_replica:
       ...
 
 ### Simulating Replicas
@@ -85,11 +85,11 @@ Add a `config/initializers/slave_pools.rb` if you want to change config settings
 
 ## Usage
 
-Toggle to next slave:
+Toggle to next replica:
 
     SlavePools.next_slave!
 
-Specify a different slave pool than the default:
+Specify a pool besides the default:
 
     SlavePools.with_pool('other_pool') { #do stuff }
 

@@ -2,10 +2,10 @@ module SlavePools
   class Pool
     attr_reader :name, :slaves, :current, :size
 
-    def initialize(name, slaves)
+    def initialize(name, connections)
       @name    = name
-      @slaves  = slaves
-      @size    = slaves.size
+      @slaves  = connections
+      @size    = connections.size
       self.reset
     end
 

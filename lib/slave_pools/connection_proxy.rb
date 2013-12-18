@@ -26,9 +26,9 @@ module SlavePools
       end
     end
 
-    def initialize(master, slave_pools)
+    def initialize(master, pools)
       @master       = master
-      @slave_pools  = slave_pools
+      @slave_pools  = pools
       @master_depth = 0
       @reconnect    = false
       @current_pool = default_pool
@@ -69,8 +69,8 @@ module SlavePools
       with_master { master.transaction(*args, &block) }
     end
 
-    # Switches to the next slave database for read operations.
-    # Fails over to the master database if all slaves are unavailable.
+    # Switches to the next replica database for read operations.
+    # Fails over to the master database if all replicas are unavailable.
     def next_slave!
       return if within_master_block? # don't if in with_master block
       self.current = current_pool.next
@@ -123,7 +123,7 @@ module SlavePools
     rescue Mysql2::Error, ActiveRecord::StatementInvalid => e
       log_errors(e, 'send_to_current', method)
       raise_master_error(e) if master?
-      logger.warn "[SlavePools] Error reading from slave database"
+      logger.warn "[SlavePools] Error reading from replica database"
       logger.error %(#{e.message}\n#{e.backtrace.join("\n")})
       if e.message.match(/Timeout waiting for a response from the last query/)
         # Verify that the connection is active & re-raise
