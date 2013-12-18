@@ -16,22 +16,7 @@ module SlavePools
     def initialize
       @environment        = 'development'
       @defaults_to_master = false
-      @safe_methods       = default_safe_methods
-    end
-
-    private
-
-    def default_safe_methods
-      return [] unless defined? Rails
-      if Rails::VERSION::MAJOR == 3
-        Set.new([
-          :select_all, :select_one, :select_value, :select_values,
-          :select_rows, :select, :verify!, :raw_connection, :active?, :reconnect!,
-          :disconnect!, :reset_runtime, :log, :log_info
-        ])
-      else
-        raise "Unsupported Rails version #{Rails.version}. Please whitelist the safe methods."
-      end
+      @safe_methods       = []
     end
   end
 end
