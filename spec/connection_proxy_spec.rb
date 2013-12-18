@@ -59,11 +59,23 @@ describe SlavePools do
     end
   end
 
-  it 'should perform transactions on the master' do
-    @master.should_receive(:select_all).exactly(5)
-    @default_slave1.should_receive(:select_all).exactly(0)
-    ActiveRecord::Base.transaction({}) do
-      5.times {@proxy.select_all(@sql)}
+  context "transaction" do
+    it 'should send all to master' do
+      @master.should_receive(:select_all).exactly(1)
+      @default_slave1.should_receive(:select_all).exactly(0)
+
+      TestModel.transaction do
+        @proxy.select_all(@sql)
+      end
+    end
+
+    it 'should send all to master even if transactions begins on AR::Base' do
+      @master.should_receive(:select_all).exactly(1)
+      @default_slave1.should_receive(:select_all).exactly(0)
+
+      ActiveRecord::Base.transaction do
+        @proxy.select_all(@sql)
+      end
     end
   end
 

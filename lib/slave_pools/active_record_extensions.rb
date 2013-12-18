@@ -10,21 +10,14 @@ module SlavePools
     end
 
     module ClassMethods
-      # Make sure transactions always switch to the master
+      # Make sure transactions run on master
+      # Even if they're initiated from ActiveRecord::Base
+      # (which doesn't have our hijack).
       def transaction(options = {}, &block)
         if self.connection.kind_of?(ConnectionProxy)
           super
         else
           self.connection_proxy.with_master { super }
-        end
-      end
-
-      # Make sure caching always uses master connection
-      def cache(&block)
-        if ActiveRecord::Base.configurations.blank?
-          yield
-        else
-          ActiveRecord::Base.connection.cache(&block)
         end
       end
     end
