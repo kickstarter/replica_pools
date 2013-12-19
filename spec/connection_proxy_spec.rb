@@ -169,14 +169,6 @@ describe SlavePools do
     lambda { @proxy.select_all(@sql) }.should raise_error
   end
 
-  it 'should try to reconnect the master connection after the master has failed' do
-    @master.should_receive(:update).and_raise(RuntimeError)
-    lambda { @proxy.update(@sql) }.should raise_error
-    @master.should_receive(:reconnect!).and_return(true)
-    @master.should_receive(:insert).and_return(1)
-    @proxy.insert(@sql)
-  end
-
   it 'should reload models from the master' do
     foo = TestModel.create!
     @master.should_receive(:select_all).and_return([{'id' => foo.id}])

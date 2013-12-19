@@ -30,7 +30,6 @@ module SlavePools
       @master       = master
       @slave_pools  = pools
       @master_depth = 0
-      @reconnect    = false
       @current_pool = default_pool
 
       if SlavePools.config.defaults_to_master
@@ -109,20 +108,19 @@ module SlavePools
     end
 
     def send_to_master(method, *args, &block)
-      reconnect_master! if @reconnect
       master.retrieve_connection.send(method, *args, &block)
     rescue => e
       log_errors(e, 'send_to_master', method)
-      raise_master_error(e)
+      raise
     end
 
     def send_to_current(method, *args, &block)
-      reconnect_master! if @reconnect && master?
       # logger.debug "[SlavePools] Using #{current.name}"
       current.retrieve_connection.send(method, *args, &block)
     rescue Mysql2::Error, ActiveRecord::StatementInvalid => e
       log_errors(e, 'send_to_current', method)
-      raise_master_error(e) if master?
+      raise if master?
+
       logger.warn "[SlavePools] Error reading from replica database"
       logger.error %(#{e.message}\n#{e.backtrace.join("\n")})
       if e.message.match(/Timeout waiting for a response from the last query/)
@@ -134,17 +132,6 @@ module SlavePools
         logger.error "[SlavePools] Slave Query Error - sending to master"
         send_to_master(method, *args, &block) # if cant connect, send the query to master
       end
-    end
-
-    def reconnect_master!
-      master.retrieve_connection.reconnect!
-      @reconnect = false
-    end
-
-    def raise_master_error(error)
-      logger.fatal "[SlavePools] Error accessing master database. Scheduling reconnect"
-      @reconnect = true
-      raise error
     end
 
     def master?
@@ -166,7 +153,6 @@ module SlavePools
       logger.error "[SlavePools] - Current Pool: #{current_pool}"
       logger.error "[SlavePools] - Current Pool Slaves: #{current_pool.slaves}" if current_pool
       logger.error "[SlavePools] - Current Pool Name: #{current_pool.name}" if current_pool
-      logger.error "[SlavePools] - Reconnect Value: #{@reconnect}"
       logger.error "[SlavePools] - Default Pool: #{default_pool}"
       logger.error "[SlavePools] - DB Method: #{db_method}"
     end
