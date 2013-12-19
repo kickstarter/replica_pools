@@ -69,12 +69,9 @@ module SlavePools
     end
 
     # Switches to the next replica database for read operations.
-    # Fails over to the master database if all replicas are unavailable.
     def next_slave!
       return if within_master_block? # don't if in with_master block
       self.current = current_pool.next
-    rescue
-      self.current = master
     end
 
     def current_slave
