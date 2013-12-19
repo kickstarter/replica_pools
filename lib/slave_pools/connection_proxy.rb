@@ -60,7 +60,7 @@ module SlavePools
       self.master_depth += 1
       yield
     ensure
-      self.master_depth = [master_depth - 1, 0].max # ensure that master depth never gets below 0
+      self.master_depth = [master_depth - 1, 0].max
       self.current = last_conn
     end
 
@@ -68,9 +68,8 @@ module SlavePools
       with_master { master.transaction(*args, &block) }
     end
 
-    # Switches to the next replica database for read operations.
     def next_slave!
-      return if within_master_block? # don't if in with_master block
+      return if within_master_block?
       self.current = current_pool.next
     end
 
@@ -81,7 +80,7 @@ module SlavePools
     protected
 
     def default_pool
-      slave_pools[:default] || slave_pools.values.first #if there is no default specified, use the first pool found
+      slave_pools[:default] || slave_pools.values.first
     end
 
     # Proxies any unknown methods to master.
