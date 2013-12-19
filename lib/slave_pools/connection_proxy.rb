@@ -20,7 +20,7 @@ module SlavePools
       def generate_safe_delegation(method)
         class_eval <<-END, __FILE__, __LINE__ + 1
           def #{method}(*args, &block)
-            send_to_current(:#{method}, *args, &block)
+            route_to(current, :#{method}, *args, &block)
           end
         END
       end
@@ -102,40 +102,34 @@ module SlavePools
     def generate_unsafe_delegation(method)
       self.class_eval <<-END, __FILE__, __LINE__ + 1
         def #{method}(*args, &block)
-          send_to_master(:#{method}, *args, &block)
+          route_to(master, :#{method}, *args, &block)
         end
       END
     end
 
-    def send_to_master(method, *args, &block)
-      master.retrieve_connection.send(method, *args, &block)
+    def route_to(conn, method, *args, &block)
+      conn.retrieve_connection.send(method, *args, &block)
     rescue => e
-      log_errors(e, 'send_to_master', method)
-      raise
-    end
+      logger.error "[SlavePools] - Error during ##{method}: #{e}"
+      log_proxy_state
+      raise if conn == master
 
-    def send_to_current(method, *args, &block)
-      # logger.debug "[SlavePools] Using #{current.name}"
-      current.retrieve_connection.send(method, *args, &block)
-    rescue Mysql2::Error, ActiveRecord::StatementInvalid => e
-      log_errors(e, 'send_to_current', method)
-      raise if master?
-
-      logger.warn "[SlavePools] Error reading from replica database"
-      logger.error %(#{e.message}\n#{e.backtrace.join("\n")})
-      if e.message.match(/Timeout waiting for a response from the last query/)
-        # Verify that the connection is active & re-raise
-        logger.error "[SlavePools] Slave Query Timeout - do not send to master"
-        current.retrieve_connection.verify!
-        raise e
+      if safe_to_replay(e)
+        logger.error %(#{e.message}\n#{e.backtrace.join("\n")})
+        logger.error "[SlavePools] Replaying on master."
+        route_to(master, method, *args, &block)
       else
-        logger.error "[SlavePools] Slave Query Error - sending to master"
-        send_to_master(method, *args, &block) # if cant connect, send the query to master
+        current.retrieve_connection.verify! # may reconnect
+        raise e
       end
     end
 
-    def master?
-      current == master
+    # decides whether to replay query against master based on the
+    # exception raised. this could become more sophisticated.
+    def safe_to_replay(e)
+      # don't replay queries that time out. we don't have the time, and they
+      # could be dangerous.
+      ! e.message.match(/Timeout waiting for a response from the last query/)
     end
 
     private
@@ -144,9 +138,7 @@ module SlavePools
       SlavePools.logger
     end
 
-    def log_errors(error, sp_method, db_method)
-      logger.error "[SlavePools] - Error: #{error}"
-      logger.error "[SlavePools] - SlavePool Method: #{sp_method}"
+    def log_proxy_state
       logger.error "[SlavePools] - Master Value: #{master}"
       logger.error "[SlavePools] - Master Depth: #{master_depth}"
       logger.error "[SlavePools] - Current Value: #{current}"
@@ -154,7 +146,6 @@ module SlavePools
       logger.error "[SlavePools] - Current Pool Slaves: #{current_pool.slaves}" if current_pool
       logger.error "[SlavePools] - Current Pool Name: #{current_pool.name}" if current_pool
       logger.error "[SlavePools] - Default Pool: #{default_pool}"
-      logger.error "[SlavePools] - DB Method: #{db_method}"
     end
   end
 end

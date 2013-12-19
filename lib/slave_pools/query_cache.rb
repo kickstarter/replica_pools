@@ -23,9 +23,9 @@ module SlavePools
     def select_all(arel, name = nil, binds = [])
       if query_cache_enabled && !locked?(arel)
         sql = to_sql(arel, binds)
-        cache_sql(sql, binds) { send_to_current(:select_all, arel, name, binds) }
+        cache_sql(sql, binds) { route_to(current, :select_all, arel, name, binds) }
       else
-        send_to_current(:select_all, arel, name, binds)
+        route_to(current, :select_all, arel, name, binds)
       end
     end
 
