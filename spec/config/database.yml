@@ -1,43 +1,32 @@
-login: &login
+test: &test
   adapter: mysql2
   username: root
   password:
   host: localhost
   encoding: utf8
   read_timeout: 1
+  database: test_db
 
 readonly_login: &readonly_login
-  adapter: mysql2
+  <<: *test
   username: read_only
   password: readme
-  host: localhost
-  encoding: utf8
-  read_timeout: 1
-
-test:
-  database: test_db
-  <<: *login
 
 test_pool_secondary_name_db1:
-  database: test_db
   <<: *readonly_login
 
 test_pool_secondary_name_db2:
-  database: test_db
   <<: *readonly_login
 
 test_pool_secondary_name_db3:
-  database: test_db
   <<: *readonly_login
 
 test_pool_default_name_db1:
-  database: test_db
   <<: *readonly_login
 
 test_pool_default_name_db2:
-  database: test_db
   <<: *readonly_login
 
 test_pool_default_name_fake_db:
-  database: fake_db_that_doesnt_exist #do not create this db, used to test the connection
   <<: *readonly_login
+  database: fake_db_that_doesnt_exist #do not create this db, used to test the connection
