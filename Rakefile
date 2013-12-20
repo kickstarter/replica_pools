@@ -8,7 +8,7 @@ task :default => :spec
 
 desc 'Bootstrap MySQL configuration'
 task :bootstrap do
-  `mysql < spec/config/bootstrap.sql`
+  system 'mysql -u root mysql < spec/config/bootstrap.sql'
 end
 
 desc "Run specs"
