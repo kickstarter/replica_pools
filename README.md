@@ -77,6 +77,8 @@ If you don't have any replicas (e.g. in your development environment), SlavePool
       username: readonly
       <<: &dev
 
+Don't do this in your test environment if you use transactional tests though! The replica connections won't be able to see any fixtures or factory data.
+
 ### Configuring
 
 Add a `config/initializers/slave_pools.rb` if you want to change config settings:
