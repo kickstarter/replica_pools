@@ -162,12 +162,9 @@ Here's one way to accomplish that:
 If you haven't already, install the rspec gem, then set up your database
 with a test database and a read_only user.
 
-To match spec/config/database.yml, you can:
+To match spec/config/database.yml, you can run:
 
-    mysql>
-      create database test_db;
-      create user 'read_only'@'localhost' identified by 'readme';
-      grant select on test_db.* to 'read_only'@'localhost';
+    rake bootstrap
 
 From the plugin directory, run:
 
