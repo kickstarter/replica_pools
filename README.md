@@ -2,6 +2,9 @@
 
 Easy Single Master/ Multiple Slave Setup for use in Ruby/Rails projects
 
+[![Build
+Status](https://travis-ci.org/kickstarter/slave_pools.png?branch=owningit)](https://travis-ci.org/kickstarter/slave_pools)
+
 ## Overview
 
 SlavePools replaces ActiveRecord's connection with a proxy that routes database interactions to the proper connection. Safe (whitelisted) methods may go to the current replica, and all other methods go to the master connection.
