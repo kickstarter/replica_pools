@@ -15,17 +15,17 @@ ActiveRecord::Base.send :include, SlavePools::ActiveRecordExtensions
 module SlavePools
   class << self
     def setup!
-      if SlavePools.pools.empty?
-        SlavePools.logger.info("[SlavePools] No pools found for #{SlavePools.config.environment}. Loading a default pool with master instead.")
-        SlavePools.pools['default'] = SlavePools::Pool.new('default', [ActiveRecord::Base])
+      if pools.empty?
+        logger.info("[SlavePools] No pools found for #{config.environment}. Loading a default pool with master instead.")
+        pools['default'] = SlavePools::Pool.new('default', [ActiveRecord::Base])
       end
 
       ConnectionProxy.generate_safe_delegations
 
       ActiveRecord::Base.send(:extend, SlavePools::Hijack)
-      ActiveRecord::Base.connection_proxy = SlavePools.proxy
+      ActiveRecord::Base.connection_proxy = self.proxy
 
-      SlavePools.logger.info("[SlavePools] Proxy loaded with: #{SlavePools.pools.keys.join(', ')}")
+      logger.info("[SlavePools] Proxy loaded with: #{pools.keys.join(', ')}")
     end
 
     def proxy
