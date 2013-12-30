@@ -6,10 +6,6 @@ module Rails
   def self.env
     ActiveSupport::StringInquirer.new("test")
   end
-
-  module VERSION
-    MAJOR = 3
-  end
 end
 
 require 'active_record'
