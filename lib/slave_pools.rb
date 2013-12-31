@@ -1,43 +1,70 @@
 require 'active_record'
-require 'slave_pools/slave_pool'
+require 'slave_pools/config'
+require 'slave_pools/pool'
+require 'slave_pools/pools'
 require 'slave_pools/active_record_extensions'
+require 'slave_pools/hijack'
 require 'slave_pools/observer_extensions'
-require 'slave_pools/query_cache_compat'
+require 'slave_pools/query_cache'
 require 'slave_pools/connection_proxy'
 
-#wrapper class to make the calls more succinct
+require 'slave_pools/engine' if defined? Rails
+ActiveRecord::Observer.send :include, SlavePools::ObserverExtensions
+ActiveRecord::Base.send :include, SlavePools::ActiveRecordExtensions
 
-class SlavePools
+module SlavePools
+  class << self
 
-  def self.setup!
-    SlavePoolsModule::ConnectionProxy.setup!
-  end
-
-  def self.active?
-    ActiveRecord::Base.respond_to?('connection_proxy')
-  end
-
-  def self.next_slave!
-    ActiveRecord::Base.connection_proxy.next_slave! if active?
-  end
-
-  def self.with_pool(pool_name = 'default')
-    if active?
-      ActiveRecord::Base.connection_proxy.with_pool(pool_name) { yield }
-    else
-      yield
+    def config
+      @config ||= SlavePools::Config.new
     end
-  end
 
-  def self.with_master
-    if active?
-      ActiveRecord::Base.connection_proxy.with_master { yield }
-    else
-      yield
+    def setup!
+      if pools.empty?
+        log :info, "No pools found for #{config.environment}. Loading a default pool with master instead."
+        pools['default'] = SlavePools::Pool.new('default', [ActiveRecord::Base])
+      end
+
+      ConnectionProxy.generate_safe_delegations
+
+      ActiveRecord::Base.send(:extend, SlavePools::Hijack)
+
+      log :info, "Proxy loaded with: #{pools.keys.join(', ')}"
     end
-  end
 
-  def self.current
-    ActiveRecord::Base.connection_proxy.current if active?
+    def proxy
+      Thread.current[:slave_pools_proxy] ||= SlavePools::ConnectionProxy.new(
+        ActiveRecord::Base,
+        SlavePools.pools
+      )
+    end
+
+    def current
+      proxy.current
+    end
+
+    def next_slave!
+      proxy.next_slave!
+    end
+
+    def with_pool(*a)
+      proxy.with_pool(*a){ yield }
+    end
+
+    def with_master
+      proxy.with_master{ yield }
+    end
+
+    def pools
+      Thread.current[:slave_pools] ||= SlavePools::Pools.new
+    end
+
+    def log(level, message)
+      logger.send(level, "[SlavePools] #{message}")
+    end
+
+    def logger
+      ActiveRecord::Base.logger
+    end
   end
 end
