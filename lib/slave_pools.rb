@@ -36,7 +36,7 @@ module SlavePools
     end
 
     def next_slave!
-      proxy.try(:next_slave!)
+      proxy.next_slave!
     end
 
     def with_pool(pool_name = 'default')
@@ -48,7 +48,7 @@ module SlavePools
     end
 
     def current
-      proxy.try(:current)
+      proxy.current
     end
 
     def log(level, message)
