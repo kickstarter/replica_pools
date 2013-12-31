@@ -50,8 +50,8 @@ module SlavePools
       ActiveRecord::Base.establish_connection(db_config)
       return ActiveRecord::Base.connection && ActiveRecord::Base.connected?
     rescue => e
-      SlavePools.logger.error "[SlavePools] - Could not connect to #{db_config.inspect}"
-      SlavePools.logger.error "[SlavePools] - #{e}"
+      SlavePools.log :error, "Could not connect to #{db_config.inspect}"
+      SlavePools.log :error, e.to_s
       return false
     ensure
       ActiveRecord::Base.establish_connection(SlavePools.config.environment)

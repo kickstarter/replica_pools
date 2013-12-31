@@ -16,7 +16,7 @@ module SlavePools
   class << self
     def setup!
       if pools.empty?
-        logger.info("[SlavePools] No pools found for #{config.environment}. Loading a default pool with master instead.")
+        log :info, "No pools found for #{config.environment}. Loading a default pool with master instead."
         pools['default'] = SlavePools::Pool.new('default', [ActiveRecord::Base])
       end
 
@@ -25,7 +25,7 @@ module SlavePools
       ActiveRecord::Base.send(:extend, SlavePools::Hijack)
       ActiveRecord::Base.connection_proxy = self.proxy
 
-      logger.info("[SlavePools] Proxy loaded with: #{pools.keys.join(', ')}")
+      log :info, "Proxy loaded with: #{pools.keys.join(', ')}"
     end
 
     def proxy
@@ -49,6 +49,10 @@ module SlavePools
 
     def current
       proxy.try(:current)
+    end
+
+    def log(level, message)
+      logger.send(level, "[SlavePools] #{message}")
     end
 
     def logger
