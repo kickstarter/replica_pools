@@ -13,8 +13,8 @@ Gem::Specification.new do |s|
   s.authors = ["Dan Drabik", "Lance Ivy"]
   s.email = "dan@kickstarter.com"
 
-  s.files = Dir.glob("lib/**/*.rb")
-  s.test_files = Dir.glob("spec/**/*.rb") + %w(LICENSE README.md)
+  s.files = Dir.glob("lib/**/*.rb") + %w(LICENSE README.md)
+  s.test_files = Dir.glob("spec/**/*.rb")
 
   s.require_paths = ["lib"]
   s.rubygems_version = %q{1.3.1}
