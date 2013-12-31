@@ -136,8 +136,6 @@ describe SlavePools do
 
   it 'should pre-generate safe methods' do
     @proxy.should respond_to(:select_value)
-    @proxy.select_value(@sql)
-    @proxy.should respond_to(:select_value)
   end
 
   it 'should dynamically generate unsafe methods' do
@@ -179,72 +177,53 @@ describe SlavePools do
 
   context "with_pool" do
 
-    it "should switch to default pool if an invalid pool is specified" do
-      @default_slave1.should_receive(:select_one).exactly(3)
-      @secondary_slave1.should_not_receive(:select_one)
-      @secondary_slave2.should_not_receive(:select_one)
-      @secondary_slave3.should_not_receive(:select_one)
-      @proxy.with_pool('sfdsfsdf') do
-        3.times {@proxy.select_one(@sql)}
+    it "should switch to the named pool" do
+      @proxy.with_pool('secondary') do
+        @proxy.current_pool.name.should eq('secondary')
+        @proxy.current.name.should eq('SlavePools::SecondaryDb1')
       end
     end
 
-    it "should switch to default pool if an no pool is specified" do
-      @default_slave1.should_receive(:select_one).exactly(1)
+    it "should switch to default pool if an unknown pool is specified" do
+      @proxy.with_pool('unknown') do
+        @proxy.current_pool.name.should eq('default')
+        @proxy.current.name.should eq('SlavePools::DefaultDb1')
+      end
+    end
+
+    it "should switch to default pool if no pool is specified" do
       @proxy.with_pool do
-        @proxy.select_one(@sql)
+        @proxy.current_pool.name.should eq('default')
+        @proxy.current.name.should eq('SlavePools::DefaultDb1')
       end
     end
 
-    it "should use a different pool if specified" do
-      @default_slave1.should_not_receive(:select_one)
-      @secondary_slave1.should_receive(:select_one).exactly(3)
-      @secondary_slave2.should_not_receive(:select_one)
-      @secondary_slave3.should_not_receive(:select_one)
+    it "should cycle replicas only within the pool" do
       @proxy.with_pool('secondary') do
-        3.times {@proxy.select_one(@sql)}
+        @proxy.current.name.should eq('SlavePools::SecondaryDb1')
+        @proxy.next_slave!
+        @proxy.current.name.should eq('SlavePools::SecondaryDb2')
+        @proxy.next_slave!
+        @proxy.current.name.should eq('SlavePools::SecondaryDb3')
+        @proxy.next_slave!
+        @proxy.current.name.should eq('SlavePools::SecondaryDb1')
       end
     end
 
-    it "should different pool should use next_slave! to advance to the next DB" do
-      @default_slave1.should_not_receive(:select_one)
-      @secondary_slave1.should_receive(:select_one).exactly(2)
-      @secondary_slave2.should_receive(:select_one).exactly(1)
-      @secondary_slave3.should_receive(:select_one).exactly(1)
+    it "should allow switching back to master" do
       @proxy.with_pool('secondary') do
-        4.times do
-          @proxy.select_one(@sql)
-          @proxy.next_slave!
-        end
-      end
-    end
-
-    it "should switch to master if with_master is specified in an inner block" do
-      @master.should_receive(:select_one).exactly(5)
-      @default_slave1.should_receive(:select_one).exactly(0)
-      @secondary_slave1.should_receive(:select_one).exactly(0)
-      @secondary_slave2.should_receive(:select_one).exactly(0)
-      @secondary_slave3.should_receive(:select_one).exactly(0)
-      @proxy.with_pool('secondary') do
+        @proxy.current.name.should eq('SlavePools::SecondaryDb1')
         @proxy.with_master do
-          5.times do
-            @proxy.select_one(@sql)
-            @proxy.next_slave!
-          end
+          @proxy.current.name.should eq('ActiveRecord::Base')
         end
       end
     end
 
-    it "should switch to master if with_master is specified in an outer block (with master needs to trump with_pool)" do
-      @secondary_slave1.should_receive(:select_one).exactly(0)
-      @secondary_slave2.should_receive(:select_one).exactly(0)
-      @secondary_slave3.should_receive(:select_one).exactly(0)
+    it "should not switch to pool when nested inside with_master" do
+      @proxy.current.name.should eq('SlavePools::DefaultDb1')
       @proxy.with_master do
         @proxy.with_pool('secondary') do
-          5.times do
-            @proxy.select_one(@sql)
-            @proxy.next_slave!
-          end
+          @proxy.current.name.should eq('ActiveRecord::Base')
         end
       end
     end
