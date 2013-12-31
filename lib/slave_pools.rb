@@ -14,6 +14,11 @@ ActiveRecord::Base.send :include, SlavePools::ActiveRecordExtensions
 
 module SlavePools
   class << self
+
+    def config
+      @config ||= SlavePools::Config.new
+    end
+
     def setup!
       if pools.empty?
         log :info, "No pools found for #{config.environment}. Loading a default pool with master instead."
@@ -35,20 +40,24 @@ module SlavePools
       )
     end
 
+    def current
+      proxy.current
+    end
+
     def next_slave!
       proxy.next_slave!
     end
 
-    def with_pool(pool_name = 'default')
-      proxy.with_pool(pool_name) { yield }
+    def with_pool(*a)
+      proxy.with_pool(*a){ yield }
     end
 
     def with_master
-      proxy.with_master { yield }
+      proxy.with_master{ yield }
     end
 
-    def current
-      proxy.current
+    def pools
+      Thread.current[:slave_pools] ||= SlavePools::Pools.new
     end
 
     def log(level, message)
@@ -57,14 +66,6 @@ module SlavePools
 
     def logger
       ActiveRecord::Base.logger
-    end
-
-    def config
-      @config ||= SlavePools::Config.new
-    end
-
-    def pools
-      Thread.current[:slave_pools] ||= SlavePools::Pools.new
     end
   end
 end
