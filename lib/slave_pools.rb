@@ -28,7 +28,6 @@ module SlavePools
       ConnectionProxy.generate_safe_delegations
 
       ActiveRecord::Base.send(:extend, SlavePools::Hijack)
-      ActiveRecord::Base.connection_proxy = self.proxy
 
       log :info, "Proxy loaded with: #{pools.keys.join(', ')}"
     end
