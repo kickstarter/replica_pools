@@ -15,6 +15,11 @@ module SlavePools
         )
       end
 
+      if pools.empty?
+        SlavePools.log :info, "No pools found for #{SlavePools.config.environment}. Loading a default pool with master instead."
+        pools[:default] = SlavePools::Pool.new('default', [ActiveRecord::Base])
+      end
+
       super pools
     end
 

@@ -20,11 +20,6 @@ module SlavePools
     end
 
     def setup!
-      if pools.empty?
-        log :info, "No pools found for #{config.environment}. Loading a default pool with master instead."
-        pools['default'] = SlavePools::Pool.new('default', [ActiveRecord::Base])
-      end
-
       ConnectionProxy.generate_safe_delegations
 
       ActiveRecord::Base.send(:extend, SlavePools::Hijack)
