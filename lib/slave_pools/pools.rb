@@ -29,7 +29,6 @@ module SlavePools
     def pool_configurations
       ActiveRecord::Base.configurations.map do |name, config|
         next unless name.to_s =~ /#{SlavePools.config.environment}_pool_(.*)_name_(.*)/
-        next unless connection_valid?(config)
         [name, $1, $2]
       end.compact
     end
@@ -48,18 +47,6 @@ module SlavePools
         end
       }, __FILE__, __LINE__
       SlavePools.const_get(class_name)
-    end
-
-    # tests a connection to be sure it's configured
-    def connection_valid?(db_config)
-      ActiveRecord::Base.establish_connection(db_config)
-      return ActiveRecord::Base.connection && ActiveRecord::Base.connected?
-    rescue => e
-      SlavePools.log :error, "Could not connect to #{db_config.inspect}"
-      SlavePools.log :error, e.to_s
-      return false
-    ensure
-      ActiveRecord::Base.establish_connection(SlavePools.config.environment)
     end
   end
 end
