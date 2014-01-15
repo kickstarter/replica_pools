@@ -29,10 +29,6 @@ describe SlavePools do
     defined?(SlavePools::SecondaryDb3).should_not be_nil
   end
 
-  it "should not generate classes for an invalid DB in the database.yml" do
-    defined?(SlavePools::DefaultFakeDb).should be_nil
-  end
-
   context "with_master" do
     it 'should revert to previous slave connection' do
       @proxy.current = @proxy.current_slave
