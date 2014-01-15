@@ -26,7 +26,3 @@ test_pool_default_name_db1:
 
 test_pool_default_name_db2:
   <<: *readonly_login
-
-test_pool_default_name_fake_db:
-  <<: *readonly_login
-  database: fake_db_that_doesnt_exist #do not create this db, used to test the connection

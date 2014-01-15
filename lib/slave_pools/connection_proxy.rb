@@ -131,13 +131,10 @@ module SlavePools
     private
 
     def log_proxy_state
-      SlavePools.log :error, "Master Value: #{master}"
+      SlavePools.log :error, "Current Connection: #{current}"
+      SlavePools.log :error, "Current Pool Name: #{current_pool.name}"
+      SlavePools.log :error, "Current Pool Members: #{current_pool.slaves}"
       SlavePools.log :error, "Master Depth: #{master_depth}"
-      SlavePools.log :error, "Current Value: #{current}"
-      SlavePools.log :error, "Current Pool: #{current_pool}"
-      SlavePools.log :error, "Current Pool Slaves: #{current_pool.slaves}" if current_pool
-      SlavePools.log :error, "Current Pool Name: #{current_pool.name}" if current_pool
-      SlavePools.log :error, "Default Pool: #{default_pool}"
     end
   end
 end
