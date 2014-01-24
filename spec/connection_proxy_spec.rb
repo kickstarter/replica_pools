@@ -166,7 +166,7 @@ describe SlavePools do
 
   it 'should reload models from the master' do
     foo = TestModel.create!
-    @master.should_receive(:select_all).and_return([{'id' => foo.id}])
+    @master.should_receive(:select_all).and_return(ActiveRecord::Result.new(["id"], ["1"]))
     @default_slave1.should_not_receive(:select_all)
     @default_slave2.should_not_receive(:select_all)
     foo.reload
