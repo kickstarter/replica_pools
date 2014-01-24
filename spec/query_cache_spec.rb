@@ -1,3 +1,4 @@
+require 'rack'
 require_relative 'spec_helper'
 
 describe SlavePools::QueryCache do
@@ -55,6 +56,7 @@ describe SlavePools::QueryCache do
         @proxy.next_slave!
         3.times { @proxy.select_all(@sql)}
         @master.query_cache.keys.size.should == 1
+        [200, {}, nil]
       }
       mw.call({})
     end
@@ -75,6 +77,7 @@ describe SlavePools::QueryCache do
           @proxy.send(meths[i], '')
           @master.query_cache.keys.size.should == 0
         end
+        [200, {}, nil]
       }
       mw.call({})
     end
