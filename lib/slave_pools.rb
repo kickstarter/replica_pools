@@ -4,12 +4,10 @@ require 'slave_pools/pool'
 require 'slave_pools/pools'
 require 'slave_pools/active_record_extensions'
 require 'slave_pools/hijack'
-require 'slave_pools/observer_extensions'
 require 'slave_pools/query_cache'
 require 'slave_pools/connection_proxy'
 
 require 'slave_pools/engine' if defined? Rails
-ActiveRecord::Observer.send :include, SlavePools::ObserverExtensions
 ActiveRecord::Base.send :include, SlavePools::ActiveRecordExtensions
 
 module SlavePools

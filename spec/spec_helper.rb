@@ -16,7 +16,6 @@ ActiveRecord::Base.configurations = YAML::load(File.open(spec_dir + '/config/dat
 ActiveRecord::Base.establish_connection :test
 ActiveRecord::Migration.verbose = false
 ActiveRecord::Migration.create_table(:test_models, :force => true) {}
-ActiveRecord::Migration.create_table(:test_subs, :force => true) {|t| t.integer :test_model_id}
 
 require 'slave_pools'
 SlavePools::Engine.initializers.each(&:run)
