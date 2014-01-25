@@ -16,7 +16,7 @@ module SlavePools
           [
             :select_all, :select_one, :select_value, :select_values,
             :select_rows, :select, :verify!, :raw_connection, :active?, :reconnect!,
-            :disconnect!, :reset_runtime, :log, :log_info
+            :disconnect!, :reset_runtime, :log
           ]
         else
           warn "Unsupported ActiveRecord version #{ActiveRecord.version}. Please whitelist the safe methods."
