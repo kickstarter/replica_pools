@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
-
-require_relative 'lib/slave_pools/version'
+lib = File.expand_path('../lib', __FILE__)
+$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+require 'slave_pools/version'
 
 Gem::Specification.new do |s|
   s.name = %q{slave_pools}
