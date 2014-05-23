@@ -143,25 +143,18 @@ describe SlavePools do
     @proxy.should respond_to(:unsafe)
   end
 
-  it 'should NOT rescue a non Mysql2::Error' do
-    @default_slave1.should_receive(:select_all).once.and_raise(RuntimeError.new('some error'))
-    @default_slave2.should_not_receive(:select_all)
-    @master.should_not_receive(:select_all)
-    lambda { @proxy.select_all(@sql) }.should raise_error
-  end
-
   it 'should rescue a Mysql::Error fall back to the master' do
     @default_slave1.should_receive(:select_all).once.and_raise(Mysql2::Error.new('connection error'))
     @default_slave2.should_not_receive(:select_all)
     @master.should_receive(:select_all).and_return(true)
-    lambda { @proxy.select_all(@sql) }.should_not raise_error
+    lambda { @proxy.select_all(@sql) }.should_not raise_error(Mysql2::Error)
   end
 
   it 'should re-raise a Mysql::Error from a query timeout and not fall back to master' do
     @default_slave1.should_receive(:select_all).once.and_raise(Mysql2::Error.new('Timeout waiting for a response from the last query. (waited 5 seconds)'))
     @default_slave2.should_not_receive(:select_all)
     @master.should_not_receive(:select_all)
-    lambda { @proxy.select_all(@sql) }.should raise_error
+    lambda { @proxy.select_all(@sql) }.should raise_error(Mysql2::Error)
   end
 
   it 'should reload models from the master' do
