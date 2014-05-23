@@ -126,9 +126,7 @@ module SlavePools
     def safe_to_replay(e)
       return true unless flagged_messages_for_error = SlavePools.config.no_replay_on_master[e.class]
 
-      flagged_messages_for_error.each do |message|
-        return false if e.message.match(message)
-      end
+      return false if flagged_messages_for_error.any? {|m| e.message.match(m)}
 
       true
     end
