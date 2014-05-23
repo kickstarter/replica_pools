@@ -148,7 +148,7 @@ describe SlavePools do
     @default_slave1.should_receive(:select_all).once.and_raise(Mysql2::Error.new('Timeout waiting for a response'))
     @default_slave2.should_not_receive(:select_all)
     @master.should_receive(:select_all).and_return(true)
-    lambda { @proxy.select_all(@sql) }.should_not raise_error(Mysql2::Error)
+    lambda { @proxy.select_all(@sql) }.should_not raise_error
   end
 
   it 'should re-raise a Error that is flagged as no replay' do
