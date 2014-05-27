@@ -124,7 +124,7 @@ module SlavePools
     # exception and message.
     # These can be adjusted by setting SlavePools.configs.no_replay_on_master.
     def safe_to_replay(e)
-      return true unless flagged_messages_for_error = SlavePools.config.no_replay_on_master[e.class]
+      return true unless flagged_messages_for_error = SlavePools.config.no_replay_on_master[e.class.to_s]
 
       return false if flagged_messages_for_error.any? {|m| e.message.match(m)}
 
