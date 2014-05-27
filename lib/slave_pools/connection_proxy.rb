@@ -121,11 +121,14 @@ module SlavePools
     end
 
     # decides whether to replay query against master based on the
-    # exception raised. this could become more sophisticated.
+    # exception and message.
+    # These can be adjusted by setting SlavePools.configs.no_replay_on_master.
     def safe_to_replay(e)
-      # don't replay queries that time out. we don't have the time, and they
-      # could be dangerous.
-      ! e.message.match(/Timeout waiting for a response from the last query/)
+      return true unless flagged_messages_for_error = SlavePools.config.no_replay_on_master[e.class.to_s]
+
+      return false if flagged_messages_for_error.any? {|m| e.message.match(m)}
+
+      true
     end
 
     private

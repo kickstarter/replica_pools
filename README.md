@@ -88,6 +88,17 @@ Add a `config/initializers/slave_pools.rb` if you want to change config settings
 
     SlavePools.config.defaults_to_master = true
 
+#### Configure Errors to not replay on master
+
+Some errors you may not want to replay on master, e.g. queries that timeout.
+
+This can be configured by updating the no_replay_on_master with a hash of errors and the corresponding messages that should not be replayed, e.g.:
+
+    SlavePools.config.no_replay_on_master = {
+      'Mysql2::Error' => ['Timeout waiting for a response from the last query', 'other error message that you don't want to replay'],
+      'TimeoutError' => ['some message']
+    }
+
 ## Usage
 
 Toggle to next replica:

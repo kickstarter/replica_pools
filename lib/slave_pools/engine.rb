@@ -21,6 +21,9 @@ module SlavePools
         else
           warn "Unsupported ActiveRecord version #{ActiveRecord.version}. Please whitelist the safe methods."
         end
+      SlavePools.config.no_replay_on_master = {
+        'Mysql2::Error' => ['Timeout waiting for a response from the last query']
+      }
     end
 
     config.after_initialize do
