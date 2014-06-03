@@ -143,16 +143,7 @@ describe SlavePools do
     @proxy.should respond_to(:unsafe)
   end
 
-  it 'should rescue an error not flagged as no replay' do
-    SlavePools.config.no_replay_on_master = {'Mysql2::Error' => ['random message']}
-    @default_slave1.should_receive(:select_all).once.and_raise(Mysql2::Error.new('Timeout waiting for a response'))
-    @default_slave2.should_not_receive(:select_all)
-    @master.should_receive(:select_all).and_return(true)
-    lambda { @proxy.select_all(@sql) }.should_not raise_error
-  end
-
-  it 'should re-raise a Error that is flagged as no replay' do
-    SlavePools.config.no_replay_on_master = {'ArgumentError' => ['random message']}
+  it 'should not replay errors on master' do
     @default_slave1.should_receive(:select_all).once.and_raise(ArgumentError.new('random message'))
     @default_slave2.should_not_receive(:select_all)
     @master.should_not_receive(:select_all)
