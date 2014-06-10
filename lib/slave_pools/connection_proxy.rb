@@ -108,27 +108,9 @@ module SlavePools
     rescue => e
       SlavePools.log :error, "Error during ##{method}: #{e}"
       log_proxy_state
-      raise if conn == master
 
-      if safe_to_replay(e)
-        SlavePools.log :error, %(#{e.message}\n#{e.backtrace.join("\n")})
-        SlavePools.log :error, "Replaying on master."
-        route_to(master, method, *args, &block)
-      else
-        current.retrieve_connection.verify! # may reconnect
-        raise e
-      end
-    end
-
-    # decides whether to replay query against master based on the
-    # exception and message.
-    # These can be adjusted by setting SlavePools.configs.no_replay_on_master.
-    def safe_to_replay(e)
-      return true unless flagged_messages_for_error = SlavePools.config.no_replay_on_master[e.class.to_s]
-
-      return false if flagged_messages_for_error.any? {|m| e.message.match(m)}
-
-      true
+      current.retrieve_connection.verify! # may reconnect
+      raise e
     end
 
     private
