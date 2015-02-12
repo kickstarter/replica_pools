@@ -46,14 +46,6 @@ describe ReplicaPools do
       end
       @proxy.current.should equal(@proxy.leader)
     end
-
-    it 'should know when in block' do
-      @proxy.send(:within_leader_block?).should_not be
-      @proxy.with_leader do
-        @proxy.send(:within_leader_block?).should be
-      end
-      @proxy.send(:within_leader_block?).should_not be
-    end
   end
 
   context "transaction" do
@@ -101,18 +93,6 @@ describe ReplicaPools do
       @proxy.next_replica!
       @proxy.select_one(@sql)
     end
-
-    it 'should not switch when in a with_leader-block' do
-      @leader.should_receive(:select_one).exactly(2)
-      @default_replica1.should_not_receive(:select_one)
-      @default_replica2.should_not_receive(:select_one)
-
-      @proxy.with_leader do
-        @proxy.select_one(@sql)
-        @proxy.next_replica!
-        @proxy.select_one(@sql)
-      end
-    end
   end
 
   it 'should send dangerous methods to the leader' do
@@ -122,13 +102,6 @@ describe ReplicaPools do
       @leader.should_receive(meth).and_return(true)
       @proxy.send(meth, @sql)
     end
-  end
-
-  it "should not allow leader depth to get below 0" do
-    @proxy.instance_variable_set("@leader_depth", -500)
-    @proxy.instance_variable_get("@leader_depth").should == -500
-    @proxy.with_leader {@sql}
-    @proxy.instance_variable_get("@leader_depth").should == 0
   end
 
   it 'should pre-generate safe methods' do
@@ -197,15 +170,6 @@ describe ReplicaPools do
       @proxy.with_pool('secondary') do
         @proxy.current.name.should eq('ReplicaPools::SecondaryDb1')
         @proxy.with_leader do
-          @proxy.current.name.should eq('ActiveRecord::Base')
-        end
-      end
-    end
-
-    it "should not switch to pool when nested inside with_leader" do
-      @proxy.current.name.should eq('ReplicaPools::DefaultDb1')
-      @proxy.with_leader do
-        @proxy.with_pool('secondary') do
           @proxy.current.name.should eq('ActiveRecord::Base')
         end
       end
