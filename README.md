@@ -1,6 +1,6 @@
 # ReplicaPools
 
-Easy Single leader / Multiple Replica Setup for use in Ruby/Rails projects
+Easy Single Leader / Multiple Replica Setup for use in Ruby/Rails projects
 
 [![Build
 Status](https://travis-ci.org/kickstarter/replica_pools.png?branch=owningit)](https://travis-ci.org/kickstarter/replica_pools)
