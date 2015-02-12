@@ -1,38 +1,38 @@
-# SlavePools
+# ReplicaPools
 
-Easy Single Master/ Multiple Slave Setup for use in Ruby/Rails projects
+Easy Single leader / Multiple Replica Setup for use in Ruby/Rails projects
 
 [![Build
-Status](https://travis-ci.org/kickstarter/slave_pools.png?branch=owningit)](https://travis-ci.org/kickstarter/slave_pools)
+Status](https://travis-ci.org/kickstarter/replica_pools.png?branch=owningit)](https://travis-ci.org/kickstarter/replica_pools)
 
 ## Overview
 
-SlavePools replaces ActiveRecord's connection with a proxy that routes database interactions to the proper connection. Safe (whitelisted) methods may go to the current replica, and all other methods go to the master connection.
+ReplicaPools replaces ActiveRecord's connection with a proxy that routes database interactions to the proper connection. Safe (whitelisted) methods may go to the current replica, and all other methods go to the leader connection.
 
-SlavePools also provides helpers so you can customize your replica strategy. You can organize replicas into pools and cycle through them (e.g. in a before_filter). You can make the connection default to the master, or the default replica pool, and then use block helpers to temporarily change the behavior (e.g. in an around_filter).
+ReplicaPools also provides helpers so you can customize your replica strategy. You can organize replicas into pools and cycle through them (e.g. in a before_filter). You can make the connection default to the leader, or the default replica pool, and then use block helpers to temporarily change the behavior (e.g. in an around_filter).
 
 * Uses a naming convention in database.yml to designate replica pools.
-* Defaults to a given replica pool, but may also be configured to default to master.
+* Defaults to a given replica pool, but may also be configured to default to leader.
 * Routes database interactions (queries) to the right connection
   * Whitelisted queries go to the current connection (might be a replica).
-  * All queries inside a transaction run on master.
-  * All other queries are also sent to the master connection.
+  * All queries inside a transaction run on leader.
+  * All other queries are also sent to the leader connection.
 * Supports ActiveRecord's in-memory query caching.
-* Helper methods can be used to easily load balance replicas, route traffic to different replica pools, or run directly against master. (examples below)
+* Helper methods can be used to easily load balance replicas, route traffic to different replica pools, or run directly against leader. (examples below)
 
 ## Not Supported
 
 * Sharding.
 * Automatic load balancing strategies.
 * Replica weights. You can accomplish this in your own load balancing strategy.
-* Whitelisting models that always use master.
-* Blacklisting poorly performing replicas. This could cause load spikes on your master. Whatever provisions your database.yml should make this choice.
+* Whitelisting models that always use leader.
+* Blacklisting poorly performing replicas. This could cause load spikes on your leader. Whatever provisions your database.yml should make this choice.
 
 ## Installation and Setup
 
 Add to your Gemfile:
 
-    gem 'slave_pools'
+    gem 'replica_pools'
 
 ### Adding Replicas
 
@@ -40,7 +40,7 @@ Add entries to your database.yml in the form of `<environment>_pool_<pool_name>_
 
 For example:
 
-    # Master connection for production environment
+    # Leader connection for production environment
     production:
       adapter: mysql
       database: myapp_production
@@ -66,7 +66,7 @@ For example:
 
 ### Simulating Replicas
 
-If you don't have any replicas (e.g. in your development environment), SlavePools will create a default pool containing only master. But if you want to mimic your production environment more closely you can create a read-only mysql user and use it like a replica.
+If you don't have any replicas (e.g. in your development environment), ReplicaPools will create a default pool containing only leader. But if you want to mimic your production environment more closely you can create a read-only mysql user and use it like a replica.
 
     # Development connection
     development: &dev
@@ -84,35 +84,35 @@ Don't do this in your test environment if you use transactional tests though! Th
 
 ### Configuring
 
-Add a `config/initializers/slave_pools.rb` if you want to change config settings:
+Add a `config/initializers/replica_pools.rb` if you want to change config settings:
 
-    SlavePools.config.defaults_to_master = true
+    ReplicaPools.config.defaults_to_leader = true
 
 ## Usage
 
 Toggle to next replica:
 
-    SlavePools.next_slave!
+    ReplicaPools.next_replica!
 
 Specify a pool besides the default:
 
-    SlavePools.with_pool('other_pool') { #do stuff }
+    ReplicaPools.with_pool('other_pool') { #do stuff }
 
-Specifically use the master for a call:
+Specifically use the leader for a call:
 
-    SlavePools.with_master { #do stuff }
+    ReplicaPools.with_leader { #do stuff }
 
 ### Load Balancing
 
 If you have multiple replicas in a pool and you'd like to load balance requests between them, you can easily accomplish this with a `before_filter`:
 
     class ApplicationController < ActionController::Base
-      after_filter    :switch_to_next_slave
+      after_filter    :switch_to_next_replica
 
       protected
 
-      def switch_to_next_slave
-        SlavePools.next_slave!
+      def switch_to_next_replica
+        ReplicaPools.next_replica!
       end
     end
 
@@ -126,34 +126,34 @@ If you have specialized replica pools and would like to use them for different c
       protected
 
       def use_special_replicas
-        SlavePools.with_pool('special'){ yield }
+        ReplicaPools.with_pool('special'){ yield }
       end
     end
 
 ### Replica Lag
 
-By default, writes are sent to the master and reads are sent to replicas. But replicas might lag behind the master by seconds or even minutes. So if you write to master during a request you probably want to read from master in that request as well. You may even want to read from the master on the _next_ request, to cover redirects.
+By default, writes are sent to the leader and reads are sent to replicas. But replicas might lag behind the leader by seconds or even minutes. So if you write to leader during a request you probably want to read from leader in that request as well. You may even want to read from the leader on the _next_ request, to cover redirects.
 
 Here's one way to accomplish that:
 
     class ApplicationController < ActionController::Base
 
-      around_filter   :stick_to_master_for_updates
-      around_filter   :use_master_for_redirect #goes with above
+      around_filter   :stick_to_leader_for_updates
+      around_filter   :use_leader_for_redirect #goes with above
 
-      def stick_to_master_for_updates
+      def stick_to_leader_for_updates
         if request.get?
           yield
         else
-          SlavePools.with_master { yield }
-          session[:stick_to_master] = 1
+          ReplicaPools.with_leader { yield }
+          session[:stick_to_leader] = 1
         end
       end
 
-      def use_master_for_redirect
-        if session[:stick_to_master]
-          session[:stick_to_master] = nil
-          SlavePools.with_master { yield }
+      def use_leader_for_redirect
+        if session[:stick_to_leader]
+          session[:stick_to_leader] = nil
+          ReplicaPools.with_leader { yield }
         else
           yield
         end
@@ -191,6 +191,6 @@ The project is based on:
 
 ### Masochism
 
-The original master/slave plugin:
+The original leader/replica plugin:
 
 * http://github.com/technoweenie/masochism

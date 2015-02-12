@@ -1,26 +1,26 @@
-module SlavePools
+module ReplicaPools
   module ActiveRecordExtensions
     def self.included(base)
       base.send :extend, ClassMethods
     end
 
     def reload(options = nil)
-      self.class.connection_proxy.with_master { super }
+      self.class.connection_proxy.with_leader { super }
     end
 
     module ClassMethods
       def connection_proxy
-        SlavePools.proxy
+        ReplicaPools.proxy
       end
 
-      # Make sure transactions run on master
+      # Make sure transactions run on leader
       # Even if they're initiated from ActiveRecord::Base
       # (which doesn't have our hijack).
       def transaction(options = {}, &block)
         if self.connection.kind_of?(ConnectionProxy)
           super
         else
-          self.connection_proxy.with_master { super }
+          self.connection_proxy.with_leader { super }
         end
       end
     end

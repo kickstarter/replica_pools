@@ -1,16 +1,16 @@
 require 'active_record/connection_adapters/abstract/query_cache'
 require 'set'
 
-module SlavePools
+module ReplicaPools
   class ConnectionProxy
-    include SlavePools::QueryCache
+    include ReplicaPools::QueryCache
 
-    attr_accessor :master
-    attr_accessor :master_depth, :current, :current_pool, :slave_pools
+    attr_accessor :leader
+    attr_accessor :leader_depth, :current, :current_pool, :replica_pools
 
     class << self
       def generate_safe_delegations
-        SlavePools.config.safe_methods.each do |method|
+        ReplicaPools.config.safe_methods.each do |method|
           generate_safe_delegation(method) unless instance_methods.include?(method)
         end
       end
@@ -26,16 +26,16 @@ module SlavePools
       end
     end
 
-    def initialize(master, pools)
-      @master       = master
-      @slave_pools  = pools
-      @master_depth = 0
+    def initialize(leader, pools)
+      @leader       = leader
+      @replica_pools  = pools
+      @leader_depth = 0
       @current_pool = default_pool
 
-      if SlavePools.config.defaults_to_master
-        @current = master
+      if ReplicaPools.config.defaults_to_leader
+        @current = leader
       else
-        @current = current_slave
+        @current = current_replica
       end
 
       # this ivar is for ConnectionAdapter compatibility
@@ -46,44 +46,44 @@ module SlavePools
 
     def with_pool(pool_name = 'default')
       last_conn, last_pool = self.current, self.current_pool
-      self.current_pool = slave_pools[pool_name.to_sym] || default_pool
-      self.current = current_slave unless within_master_block?
+      self.current_pool = replica_pools[pool_name.to_sym] || default_pool
+      self.current = current_replica unless within_leader_block?
       yield
     ensure
       self.current_pool = last_pool
       self.current      = last_conn
     end
 
-    def with_master
+    def with_leader
       last_conn = self.current
-      self.current = master
-      self.master_depth += 1
+      self.current = leader
+      self.leader_depth += 1
       yield
     ensure
-      self.master_depth = [master_depth - 1, 0].max
+      self.leader_depth = [leader_depth - 1, 0].max
       self.current = last_conn
     end
 
     def transaction(*args, &block)
-      with_master { master.transaction(*args, &block) }
+      with_leader { leader.transaction(*args, &block) }
     end
 
-    def next_slave!
-      return if within_master_block?
+    def next_replica!
+      return if within_leader_block?
       self.current = current_pool.next
     end
 
-    def current_slave
+    def current_replica
       current_pool.current
     end
 
     protected
 
     def default_pool
-      slave_pools[:default] || slave_pools.values.first
+      replica_pools[:default] || replica_pools.values.first
     end
 
-    # Proxies any unknown methods to master.
+    # Proxies any unknown methods to leader.
     # Safe methods have been generated during `setup!`.
     # Creates a method to speed up subsequent calls.
     def method_missing(method, *args, &block)
@@ -91,14 +91,14 @@ module SlavePools
       send(method, *args, &block)
     end
 
-    def within_master_block?
-      master_depth > 0
+    def within_leader_block?
+      leader_depth > 0
     end
 
     def generate_unsafe_delegation(method)
       self.class_eval <<-END, __FILE__, __LINE__ + 1
         def #{method}(*args, &block)
-          route_to(master, :#{method}, *args, &block)
+          route_to(leader, :#{method}, *args, &block)
         end
       END
     end
@@ -106,7 +106,7 @@ module SlavePools
     def route_to(conn, method, *args, &block)
       conn.retrieve_connection.send(method, *args, &block)
     rescue => e
-      SlavePools.log :error, "Error during ##{method}: #{e}"
+      ReplicaPools.log :error, "Error during ##{method}: #{e}"
       log_proxy_state
 
       current.retrieve_connection.verify! # may reconnect
@@ -116,10 +116,10 @@ module SlavePools
     private
 
     def log_proxy_state
-      SlavePools.log :error, "Current Connection: #{current}"
-      SlavePools.log :error, "Current Pool Name: #{current_pool.name}"
-      SlavePools.log :error, "Current Pool Members: #{current_pool.slaves}"
-      SlavePools.log :error, "Master Depth: #{master_depth}"
+      ReplicaPools.log :error, "Current Connection: #{current}"
+      ReplicaPools.log :error, "Current Pool Name: #{current_pool.name}"
+      ReplicaPools.log :error, "Current Pool Members: #{current_pool.replicas}"
+      ReplicaPools.log :error, "leader Depth: #{leader_depth}"
     end
   end
 end

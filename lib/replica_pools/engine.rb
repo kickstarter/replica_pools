@@ -1,11 +1,11 @@
 require 'rails/engine'
 
-module SlavePools
+module ReplicaPools
   class Engine < Rails::Engine
-    initializer 'slave_pools.defaults' do
-      SlavePools.config.environment = Rails.env
+    initializer 'replica_pools.defaults' do
+      ReplicaPools.config.environment = Rails.env
 
-      SlavePools.config.safe_methods =
+      ReplicaPools.config.safe_methods =
         if ActiveRecord::VERSION::MAJOR == 3
           [
             :select_all, :select_one, :select_value, :select_values,
@@ -24,7 +24,7 @@ module SlavePools
     end
 
     config.after_initialize do
-      SlavePools.setup!
+      ReplicaPools.setup!
     end
   end
 end

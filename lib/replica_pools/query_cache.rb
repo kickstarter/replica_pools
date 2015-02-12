@@ -1,4 +1,4 @@
-module SlavePools
+module ReplicaPools
   # duck-types with ActiveRecord::ConnectionAdapters::QueryCache
   # but relies on ActiveRecord::Base.query_cache for state so we
   # don't fragment the cache across multiple connections
@@ -8,7 +8,7 @@ module SlavePools
   module QueryCache
     query_cache_methods = ActiveRecord::ConnectionAdapters::QueryCache.instance_methods(false)
 
-    # these methods can all use the master connection
+    # these methods can all use the leader connection
     (query_cache_methods - [:select_all]).each do |method_name|
       module_eval <<-END, __FILE__, __LINE__ + 1
         def #{method_name}(*a, &b)
@@ -17,7 +17,7 @@ module SlavePools
       END
     end
 
-    # select_all is trickier. it needs to use the master
+    # select_all is trickier. it needs to use the leader
     # connection for cache logic, but ultimately pass its query
     # through to whatever connection is current.
     def select_all(arel, name = nil, binds = [])
