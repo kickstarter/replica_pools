@@ -6,7 +6,7 @@ module ReplicaPools
     include ReplicaPools::QueryCache
 
     attr_accessor :leader
-    attr_accessor :leader_depth, :current, :current_pool, :replica_pools
+    attr_accessor :current, :current_pool, :replica_pools
 
     class << self
       def generate_safe_delegations
@@ -29,7 +29,6 @@ module ReplicaPools
     def initialize(leader, pools)
       @leader       = leader
       @replica_pools  = pools
-      @leader_depth = 0
       @current_pool = default_pool
 
       if ReplicaPools.config.defaults_to_leader
@@ -47,7 +46,7 @@ module ReplicaPools
     def with_pool(pool_name = 'default')
       last_conn, last_pool = self.current, self.current_pool
       self.current_pool = replica_pools[pool_name.to_sym] || default_pool
-      self.current = current_replica unless within_leader_block?
+      self.current = current_replica
       yield
     ensure
       self.current_pool = last_pool
@@ -57,10 +56,8 @@ module ReplicaPools
     def with_leader
       last_conn = self.current
       self.current = leader
-      self.leader_depth += 1
       yield
     ensure
-      self.leader_depth = [leader_depth - 1, 0].max
       self.current = last_conn
     end
 
@@ -69,7 +66,6 @@ module ReplicaPools
     end
 
     def next_replica!
-      return if within_leader_block?
       self.current = current_pool.next
     end
 
@@ -89,10 +85,6 @@ module ReplicaPools
     def method_missing(method, *args, &block)
       generate_unsafe_delegation(method)
       send(method, *args, &block)
-    end
-
-    def within_leader_block?
-      leader_depth > 0
     end
 
     def generate_unsafe_delegation(method)
@@ -119,7 +111,6 @@ module ReplicaPools
       ReplicaPools.log :error, "Current Connection: #{current}"
       ReplicaPools.log :error, "Current Pool Name: #{current_pool.name}"
       ReplicaPools.log :error, "Current Pool Members: #{current_pool.replicas}"
-      ReplicaPools.log :error, "leader Depth: #{leader_depth}"
     end
   end
 end
