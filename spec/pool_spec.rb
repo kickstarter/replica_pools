@@ -1,34 +1,34 @@
 require_relative 'spec_helper'
 
-describe SlavePools::Pool do
+describe ReplicaPools::Pool do
 
-  context "Multiple slaves" do
+  context "Multiple replicas" do
     before do
-      @slaves = ["db1", "db2", "db3"]
-      @slave_pool = SlavePools::Pool.new("name", @slaves.clone)
+      @replicas = ["db1", "db2", "db3"]
+      @replica_pool = ReplicaPools::Pool.new("name", @replicas.clone)
     end
 
-    specify {@slave_pool.size.should == 3}
+    specify {@replica_pool.size.should == 3}
 
     it "should return items in a round robin fashion" do
-      @slave_pool.current.should == @slaves[0]
-      @slave_pool.next.should == @slaves[1]
-      @slave_pool.next.should == @slaves[2]
-      @slave_pool.next.should == @slaves[0]
+      @replica_pool.current.should == @replicas[0]
+      @replica_pool.next.should == @replicas[1]
+      @replica_pool.next.should == @replicas[2]
+      @replica_pool.next.should == @replicas[0]
     end
   end
 
-  context "Single Slave" do
+  context "Single replica" do
     before do
-      @slaves = ["db1"]
-      @slave_pool = SlavePools::Pool.new("name", @slaves.clone)
+      @replicas = ["db1"]
+      @replica_pool = ReplicaPools::Pool.new("name", @replicas.clone)
     end
 
-    specify {@slave_pool.size.should == 1}
+    specify {@replica_pool.size.should == 1}
 
     it "should return items in a round robin fashion" do
-      @slave_pool.current.should == @slaves[0]
-      @slave_pool.next.should == @slaves[0]
+      @replica_pool.current.should == @replicas[0]
+      @replica_pool.next.should == @replicas[0]
     end
   end
 end

@@ -1,27 +1,27 @@
 require 'rack'
 require_relative 'spec_helper'
 
-describe SlavePools::QueryCache do
+describe ReplicaPools::QueryCache do
   before(:each) do
     @sql = 'SELECT NOW()'
 
-    @proxy = SlavePools.proxy
-    @master = @proxy.master.retrieve_connection
+    @proxy = ReplicaPools.proxy
+    @leader = @proxy.leader.retrieve_connection
 
-    @master.clear_query_cache
+    @leader.clear_query_cache
 
     reset_proxy(@proxy)
-    create_slave_aliases(@proxy)
+    create_replica_aliases(@proxy)
   end
 
   it 'should cache queries using select_all' do
     ActiveRecord::Base.cache do
-      # next_slave will be called and switch to the SlaveDatabase2
-      @default_slave1.should_receive(:select_all).exactly(1).and_return([])
-      @default_slave2.should_not_receive(:select_all)
-      @master.should_not_receive(:select_all)
+      # next_replica will be called and switch to the replicaDatabase2
+      @default_replica1.should_receive(:select_all).exactly(1).and_return([])
+      @default_replica2.should_not_receive(:select_all)
+      @leader.should_not_receive(:select_all)
       3.times { @proxy.select_all(@sql) }
-      @master.query_cache.keys.size.should == 1
+      @leader.query_cache.keys.size.should == 1
     end
   end
 
@@ -29,17 +29,17 @@ describe SlavePools::QueryCache do
     ActiveRecord::Base.cache do
       meths = [:insert, :update, :delete, :insert, :update]
       meths.each do |meth|
-        @master.should_receive("exec_#{meth}").and_return(true)
+        @leader.should_receive("exec_#{meth}").and_return(true)
       end
 
-      @default_slave1.should_receive(:select_all).exactly(5).and_return([])
-      @default_slave2.should_receive(:select_all).exactly(0)
+      @default_replica1.should_receive(:select_all).exactly(5).and_return([])
+      @default_replica2.should_receive(:select_all).exactly(0)
       5.times do |i|
         @proxy.select_all(@sql)
         @proxy.select_all(@sql)
-        @master.query_cache.keys.size.should == 1
+        @leader.query_cache.keys.size.should == 1
         @proxy.send(meths[i], '')
-        @master.query_cache.keys.size.should == 0
+        @leader.query_cache.keys.size.should == 0
       end
     end
   end
@@ -47,15 +47,15 @@ describe SlavePools::QueryCache do
   describe "using querycache middleware" do
     it 'should cache queries using select_all' do
       mw = ActiveRecord::QueryCache.new lambda { |env|
-        @default_slave1.should_receive(:select_all).exactly(1).and_return([])
-        @default_slave2.should_not_receive(:select_all)
-        @master.should_not_receive(:select_all)
+        @default_replica1.should_receive(:select_all).exactly(1).and_return([])
+        @default_replica2.should_not_receive(:select_all)
+        @leader.should_not_receive(:select_all)
         3.times { @proxy.select_all(@sql) }
-        @proxy.next_slave!
+        @proxy.next_replica!
         3.times { @proxy.select_all(@sql) }
-        @proxy.next_slave!
+        @proxy.next_replica!
         3.times { @proxy.select_all(@sql)}
-        @master.query_cache.keys.size.should == 1
+        @leader.query_cache.keys.size.should == 1
         [200, {}, nil]
       }
       mw.call({})
@@ -65,17 +65,17 @@ describe SlavePools::QueryCache do
       mw = ActiveRecord::QueryCache.new lambda { |env|
         meths = [:insert, :update, :delete, :insert, :update]
         meths.each do |meth|
-          @master.should_receive("exec_#{meth}").and_return(true)
+          @leader.should_receive("exec_#{meth}").and_return(true)
         end
 
-        @default_slave1.should_receive(:select_all).exactly(5).and_return([])
-        @default_slave2.should_receive(:select_all).exactly(0)
+        @default_replica1.should_receive(:select_all).exactly(5).and_return([])
+        @default_replica2.should_receive(:select_all).exactly(0)
         5.times do |i|
           @proxy.select_all(@sql)
           @proxy.select_all(@sql)
-          @master.query_cache.keys.size.should == 1
+          @leader.query_cache.keys.size.should == 1
           @proxy.send(meths[i], '')
-          @master.query_cache.keys.size.should == 0
+          @leader.query_cache.keys.size.should == 0
         end
         [200, {}, nil]
       }
