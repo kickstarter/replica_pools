@@ -108,8 +108,6 @@ module ReplicaPools
     rescue => e
       ReplicaPools.log :error, "Error during ##{method}: #{e}"
       log_proxy_state
-
-      current.retrieve_connection.verify! # may reconnect
       raise e
     end
 
