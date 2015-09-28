@@ -2,7 +2,10 @@ require 'rails/engine'
 
 module ReplicaPools
   class Engine < Rails::Engine
-    initializer 'replica_pools.defaults' do
+    # the :finisher_hook initializer is what runs :after_initializer
+    # callbacks. we want to guarantee that this configuration happens
+    # before `setup!` no matter what else happens to initializer order.
+    initializer 'replica_pools.defaults', before: :finisher_hook do
       ReplicaPools.config.environment = Rails.env
 
       ReplicaPools.config.safe_methods =
