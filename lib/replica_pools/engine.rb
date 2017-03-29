@@ -7,6 +7,7 @@ module ReplicaPools
     # before `setup!` no matter what else happens to initializer order.
     initializer 'replica_pools.defaults', before: :finisher_hook do
       ReplicaPools.config.environment = Rails.env
+      ReplicaPools.config.ar_v5 = ActiveRecord::VERSION::MAJOR == 5
 
       ReplicaPools.config.safe_methods =
         if ActiveRecord::VERSION::MAJOR == 3
@@ -15,7 +16,7 @@ module ReplicaPools
             :select_rows, :select, :verify!, :raw_connection, :active?, :reconnect!,
             :disconnect!, :reset_runtime, :log, :log_info
           ]
-        elsif ActiveRecord::VERSION::MAJOR == 4
+        elsif [4, 5].include? ActiveRecord::VERSION::MAJOR
           [
             :select_all, :select_one, :select_value, :select_values,
             :select_rows, :select, :verify!, :raw_connection, :active?, :reconnect!,
