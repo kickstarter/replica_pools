@@ -28,13 +28,13 @@ module ReplicaPools
 
       if query_cache_enabled && !locked?(arel)
         sql = to_sql(arel, binds)
-        if SlavePools.config.ar_v5
+        if ReplicaPools.config.ar_v5
           cache_sql(sql, binds) { route_to(current, :select_all, sql, name, binds, preparable) }
         else
           cache_sql(sql, binds) { route_to(current, :select_all, sql, name, binds) }
         end
       else
-        if SlavePools.config.ar_v5
+        if ReplicaPools.config.ar_v5
           route_to(current, :select_all, arel, name, binds, preparable)
         else
           route_to(current, :select_all, arel, name, binds)
