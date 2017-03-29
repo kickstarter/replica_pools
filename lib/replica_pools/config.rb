@@ -9,9 +9,6 @@ module ReplicaPools
     # Defaults to false.
     attr_accessor :defaults_to_leader
 
-    # Needed for Rails 5 change to select_all signature
-    attr_accessor :ar_v5
-
     # The list of methods considered safe to send to a readonly connection.
     # Defaults are based on Rails version.
     attr_accessor :safe_methods

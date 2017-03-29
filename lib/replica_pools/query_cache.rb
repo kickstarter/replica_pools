@@ -21,24 +21,13 @@ module ReplicaPools
     # connection for cache logic, but ultimately pass its query
     # through to whatever connection is current.
     def select_all(*args)
-      arel = args[0]
-      name = args[1]
-      binds = args[2]
-      preparable = args[3]
-
+      arel, name, binds, preparable = args
       if query_cache_enabled && !locked?(arel)
         sql = to_sql(arel, binds)
-        if ReplicaPools.config.ar_v5
-          cache_sql(sql, binds) { route_to(current, :select_all, sql, name, binds, preparable) }
-        else
-          cache_sql(sql, binds) { route_to(current, :select_all, sql, name, binds) }
-        end
+        args[0] = sql
+        cache_sql(sql, binds) { route_to(current, :select_all, *args) }
       else
-        if ReplicaPools.config.ar_v5
-          route_to(current, :select_all, arel, name, binds, preparable)
-        else
-          route_to(current, :select_all, arel, name, binds)
-        end
+        route_to(current, :select_all, *args)
       end
     end
 
