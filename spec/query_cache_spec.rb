@@ -60,7 +60,7 @@ describe ReplicaPools::QueryCache do
       end
     end
 
-    def insert_update_delete_app(env)
+    def insert_update_delete_app
       lambda do |env|
         meths = [:insert, :update, :delete, :insert, :update]
         meths.each do |meth|
@@ -96,7 +96,7 @@ describe ReplicaPools::QueryCache do
       end
 
       it 'should invalidate the cache on insert, delete and update' do
-        executor.wrap { insert_update_delete_app(env) }
+        executor.wrap { insert_update_delete_app }
       end
     end
   end
