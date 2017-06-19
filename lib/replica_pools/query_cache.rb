@@ -26,8 +26,11 @@ module ReplicaPools
       arel, name, binds = args
 
       if query_cache_enabled && !locked?(arel)
+        arel, binds = binds_from_relation(arel, binds)
         sql = to_sql(arel, binds)
+
         args[0] = sql
+        args[2] = binds
 
         if Gem::Version.new(ActiveRecord.version) < Gem::Version.new('5.1')
           cache_sql(sql, binds) { route_to(current, :select_all, *args) }
