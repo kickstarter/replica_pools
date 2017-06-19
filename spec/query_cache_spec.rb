@@ -45,8 +45,8 @@ describe ReplicaPools::QueryCache do
   end
 
   describe "using querycache middleware" do
-    it 'should cache queries using select_all' do
-      mw = ActiveRecord::QueryCache.new lambda { |env|
+    def select_all_queries_app
+      lambda do |env|
         @default_replica1.should_receive(:select_all).exactly(1).and_return([])
         @default_replica2.should_not_receive(:select_all)
         @leader.should_not_receive(:select_all)
@@ -57,12 +57,11 @@ describe ReplicaPools::QueryCache do
         3.times { @proxy.select_all(@sql)}
         @leader.query_cache.keys.size.should == 1
         [200, {}, nil]
-      }
-      mw.call({})
+      end
     end
 
-    it 'should invalidate the cache on insert, delete and update' do
-      mw = ActiveRecord::QueryCache.new lambda { |env|
+    def insert_update_delete_app(env)
+      lambda do |env|
         meths = [:insert, :update, :delete, :insert, :update]
         meths.each do |meth|
           @leader.should_receive("exec_#{meth}").and_return(true)
@@ -78,9 +77,33 @@ describe ReplicaPools::QueryCache do
           @leader.query_cache.keys.size.should == 0
         end
         [200, {}, nil]
-      }
-      mw.call({})
+      end
+    end
+
+    if Gem::Version.new(ActiveRecord.version) < Gem::Version.new('5.0')
+      it 'should cache queries using select_all' do
+        mw = ActiveRecord::QueryCache.new(select_all_queries_app)
+        mw.call({})
+      end
+
+      it 'should invalidate the cache on insert, delete and update' do
+        mw = ActiveRecord::QueryCache.new(insert_update_delete_app)
+        mw.call({})
+      end
+    else
+      it 'should cache queries using select_all' do
+        executor.wrap { select_all_queries_app }
+      end
+
+      it 'should invalidate the cache on insert, delete and update' do
+        executor.wrap { insert_update_delete_app(env) }
+      end
     end
   end
 
+  def executor
+    @executor ||= Class.new(ActiveSupport::Executor).tap do |exe|
+      ActiveRecord::QueryCache.install_executor_hooks(exe)
+    end
+  end
 end
