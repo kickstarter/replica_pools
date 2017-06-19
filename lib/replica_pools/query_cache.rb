@@ -23,10 +23,16 @@ module ReplicaPools
     def select_all(*args)
       # there may be more args for Rails 5.0+, but we'll only extract those
       # that are relevant to leader caching logic.
-      arel, name, binds = args
+      relation, name, raw_binds = args
 
-      if query_cache_enabled && !locked?(arel)
-        arel, binds = binds_from_relation(arel, binds)
+      if query_cache_enabled && !locked?(relation)
+        # duplicate binds_from_relation behavior introduced in 4.2.
+        arel, binds = if binds.blank? && relation.is_a?(Relation)
+          relation.arel, relation.bind_values
+        else
+          relation, raw_binds
+        end
+
         sql = to_sql(arel, binds)
 
         args[0] = sql
