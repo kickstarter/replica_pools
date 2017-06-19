@@ -27,10 +27,10 @@ module ReplicaPools
 
       if query_cache_enabled && !locked?(relation)
         # duplicate binds_from_relation behavior introduced in 4.2.
-        arel, binds = if binds.blank? && relation.is_a?(Relation)
-          relation.arel, relation.bind_values
+        if raw_binds.blank? && relation.is_a?(ActiveRecord::Relation)
+          arel, binds = relation.arel, relation.bind_values
         else
-          relation, raw_binds
+          arel, binds = relation, raw_binds
         end
 
         sql = to_sql(arel, binds)
