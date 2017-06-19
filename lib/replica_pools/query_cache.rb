@@ -21,7 +21,10 @@ module ReplicaPools
     # connection for cache logic, but ultimately pass its query
     # through to whatever connection is current.
     def select_all(*args)
-      arel, name, binds, preparable = args
+      # there may be more args for Rails 5.0+, but we'll only extract those
+      # that are relevant to leader caching logic.
+      arel, name, binds = args
+
       if query_cache_enabled && !locked?(arel)
         sql = to_sql(arel, binds)
         args[0] = sql
