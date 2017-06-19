@@ -17,11 +17,11 @@ describe ReplicaPools::QueryCache do
   it 'should cache queries using select_all' do
     ActiveRecord::Base.cache do
       # next_replica will be called and switch to the replicaDatabase2
-      @default_replica1.should_receive(:select_all).exactly(1).and_return([])
-      @default_replica2.should_not_receive(:select_all)
-      @leader.should_not_receive(:select_all)
+      expect(@default_replica1).to(receive(:select_all).exactly(1).and_return([]))
+      expect(@default_replica2).to_not(receive(:select_all))
+      expect(@leader).to_not(receive(:select_all))
       3.times { @proxy.select_all(@sql) }
-      @leader.query_cache.keys.size.should == 1
+      expect(@leader.query_cache.keys.size).to(eq(1))
     end
   end
 
@@ -29,17 +29,17 @@ describe ReplicaPools::QueryCache do
     ActiveRecord::Base.cache do
       meths = [:insert, :update, :delete, :insert, :update]
       meths.each do |meth|
-        @leader.should_receive("exec_#{meth}").and_return(true)
+        expect(@leader).to(receive("exec_#{meth}").and_return(true))
       end
 
-      @default_replica1.should_receive(:select_all).exactly(5).and_return([])
-      @default_replica2.should_receive(:select_all).exactly(0)
+      expect(@default_replica1).to(receive(:select_all).exactly(5).and_return([]))
+      expect(@default_replica2).to(receive(:select_all).exactly(0))
       5.times do |i|
         @proxy.select_all(@sql)
         @proxy.select_all(@sql)
-        @leader.query_cache.keys.size.should == 1
+        expect(@leader.query_cache.keys.size).to(eq(1))
         @proxy.send(meths[i], '')
-        @leader.query_cache.keys.size.should == 0
+        expect(@leader.query_cache.keys.size).to(eq(0))
       end
     end
   end
@@ -47,15 +47,15 @@ describe ReplicaPools::QueryCache do
   describe "using querycache middleware" do
     it 'should cache queries using select_all' do
       mw = ActiveRecord::QueryCache.new lambda { |env|
-        @default_replica1.should_receive(:select_all).exactly(1).and_return([])
-        @default_replica2.should_not_receive(:select_all)
-        @leader.should_not_receive(:select_all)
+        expect(@default_replica1).to(receive(:select_all).exactly(1).and_return([]))
+        expect(@default_replica2).to_not(receive(:select_all))
+        expect(@leader).to_not(receive(:select_all))
         3.times { @proxy.select_all(@sql) }
         @proxy.next_replica!
         3.times { @proxy.select_all(@sql) }
         @proxy.next_replica!
         3.times { @proxy.select_all(@sql)}
-        @leader.query_cache.keys.size.should == 1
+        expect(@leader.query_cache.keys.size).to(eq(1))
         [200, {}, nil]
       }
       mw.call({})
@@ -65,17 +65,17 @@ describe ReplicaPools::QueryCache do
       mw = ActiveRecord::QueryCache.new lambda { |env|
         meths = [:insert, :update, :delete, :insert, :update]
         meths.each do |meth|
-          @leader.should_receive("exec_#{meth}").and_return(true)
+          expect(@leader).to(receive("exec_#{meth}").and_return(true))
         end
 
-        @default_replica1.should_receive(:select_all).exactly(5).and_return([])
-        @default_replica2.should_receive(:select_all).exactly(0)
+        expect(@default_replica1).to(receive(:select_all).exactly(5).and_return([]))
+        expect(@default_replica2).to(receive(:select_all).exactly(0))
         5.times do |i|
           @proxy.select_all(@sql)
           @proxy.select_all(@sql)
-          @leader.query_cache.keys.size.should == 1
+          expect(@leader.query_cache.keys.size).to(eq(1))
           @proxy.send(meths[i], '')
-          @leader.query_cache.keys.size.should == 0
+          expect(@leader.query_cache.keys.size).to(eq(0))
         end
         [200, {}, nil]
       }

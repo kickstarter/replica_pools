@@ -8,13 +8,13 @@ describe ReplicaPools::Pool do
       @replica_pool = ReplicaPools::Pool.new("name", @replicas.clone)
     end
 
-    specify {@replica_pool.size.should == 3}
+    specify { expect(@replica_pool.size).to(eq(3)) }
 
     it "should return items in a round robin fashion" do
-      @replica_pool.current.should == @replicas[0]
-      @replica_pool.next.should == @replicas[1]
-      @replica_pool.next.should == @replicas[2]
-      @replica_pool.next.should == @replicas[0]
+      expect(@replica_pool.current).to(eq(@replicas[0]))
+      expect(@replica_pool.next).to(eq(@replicas[1]))
+      expect(@replica_pool.next).to(eq(@replicas[2]))
+      expect(@replica_pool.next).to(eq(@replicas[0]))
     end
   end
 
@@ -24,11 +24,11 @@ describe ReplicaPools::Pool do
       @replica_pool = ReplicaPools::Pool.new("name", @replicas.clone)
     end
 
-    specify {@replica_pool.size.should == 1}
+    specify { expect(@replica_pool.size).to(eq(1)) }
 
     it "should return items in a round robin fashion" do
-      @replica_pool.current.should == @replicas[0]
-      @replica_pool.next.should == @replicas[0]
+      expect(@replica_pool.current).to(eq(@replicas[0]))
+      expect(@replica_pool.next).to(eq(@replicas[0]))
     end
   end
 end
