@@ -15,11 +15,17 @@ module ReplicaPools
             :select_rows, :select, :verify!, :raw_connection, :active?, :reconnect!,
             :disconnect!, :reset_runtime, :log, :log_info
           ]
-        elsif [4, 5].include? ActiveRecord::VERSION::MAJOR
+        elsif ActiveRecord::VERSION::MAJOR == 4
           [
             :select_all, :select_one, :select_value, :select_values,
-            :select_rows, :select, :select_prepared, :verify!, :raw_connection,
-            :active?, :reconnect!, :disconnect!, :reset_runtime, :log
+            :select_rows, :select, :verify!, :raw_connection, :active?, :reconnect!,
+            :disconnect!, :reset_runtime, :log
+          ]
+        elsif ActiveRecord::VERSION::MAJOR == 5
+          [
+           :select_all, :select_one, :select_value, :select_values,
+           :select_rows, :select, :select_prepared, :verify!, :raw_connection,
+           :active?, :reconnect!, :disconnect!, :reset_runtime, :log
           ]
         else
           warn "Unsupported ActiveRecord version #{ActiveRecord.version}. Please whitelist the safe methods."
