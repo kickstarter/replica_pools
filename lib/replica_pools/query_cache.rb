@@ -21,7 +21,8 @@ module ReplicaPools
     # connection for cache logic, but ultimately pass its query
     # through to whatever connection is current.
     def select_all(*args)
-      arel, name, binds, preparable = args
+      # there are more args, but we only care about arel and binds for caching
+      arel, _, binds = args
       if query_cache_enabled && !locked?(arel)
         sql = to_sql(arel, binds)
         args[0] = sql
