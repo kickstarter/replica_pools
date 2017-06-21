@@ -21,12 +21,18 @@ module ReplicaPools
     # connection for cache logic, but ultimately pass its query
     # through to whatever connection is current.
     def select_all(*args)
-      # there are more args, but we only care about arel and binds for caching
-      arel, _, binds = args
+      # there are more args, but we only care about arel, name, and binds for caching
+      arel, name, binds = args
       if query_cache_enabled && !locked?(arel)
         sql = to_sql(arel, binds)
         args[0] = sql
-        cache_sql(sql, binds) { route_to(current, :select_all, *args) }
+
+        if ActiveRecord::VERSION::STRING >= '5.1'
+          cache_sql(sql, name, binds) { route_to(current, :select_all, *args) }
+        else
+          cache_sql(sql, binds) { route_to(current, :select_all, *args) }
+        end
+
       else
         route_to(current, :select_all, *args)
       end
