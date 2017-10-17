@@ -2,7 +2,6 @@ require 'rack'
 require_relative 'spec_helper'
 
 describe ReplicaPools::QueryCache do
-
   before(:each) do
     @sql = 'SELECT NOW()'
 
@@ -104,5 +103,4 @@ describe ReplicaPools::QueryCache do
       end
     end
   end
-
 end
