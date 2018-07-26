@@ -23,6 +23,7 @@ module ReplicaPools
     def select_all(*args)
       # there may be more args for Rails 5.0+, but we only care about arel, name, and binds for caching.
       relation, name, raw_binds = args
+      raw_binds ||= []
 
       if !query_cache_enabled || locked?(relation)
         return route_to(current, :select_all, *args)
