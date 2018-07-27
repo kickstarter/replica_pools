@@ -11,8 +11,7 @@ end
 require 'active_record'
 spec_dir = File.dirname(__FILE__)
 ActiveRecord::Base.logger = Logger.new(spec_dir + "/debug.log")
-ActiveRecord::Base.configurations = YAML::load(File.open(spec_dir + '/config/database.yml'))
-
+ActiveRecord::Base.configurations = YAML::load(ERB.new(File.read(spec_dir + '/config/database.yml')).result)
 ActiveRecord::Base.establish_connection :test
 ActiveRecord::Migration.verbose = false
 ActiveRecord::Migration.create_table(:test_models, :force => true) {}

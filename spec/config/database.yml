@@ -1,8 +1,9 @@
 test: &test
   adapter: mysql2
   username: root
-  password:
-  host: localhost
+  password: ''
+  host: 127.0.0.1
+  port: <%= ENV["MYSQL_PORT"] || 3309 %>
   encoding: utf8
   read_timeout: 1
   database: test_db

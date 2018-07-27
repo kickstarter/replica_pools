@@ -22,7 +22,7 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = Gem::Requirement.new(">= 1.2") if s.respond_to? :required_rubygems_version=
 
   s.add_dependency('activerecord', [">= 3.2.12"])
-  s.add_development_dependency('mysql2', ["~> 0.3.11"])
+  s.add_development_dependency('mysql2', ["~> 0.4.4"])
   s.add_development_dependency('rack')
   s.add_development_dependency('rspec')
   s.add_development_dependency('rake')

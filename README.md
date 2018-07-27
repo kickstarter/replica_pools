@@ -162,22 +162,27 @@ Here's one way to accomplish that:
 
 ## Running specs
 
-If you haven't already, install the rspec gem, then set up your database
-with a test database and a read_only user.
+Tests are run against MySQL 5.6 using docker-compose. 🐋
 
-To match spec/config/database.yml, you can run:
+To get set up, first run:
 
-    rake bootstrap
+```bash
+$ docker-compose up
+$ bundle install
+$ bundle exec rake bootstrap
+```
 
-From the plugin directory, run:
+Then you can run tests with:
 
-    rspec spec
+```bash
+$ bundle exec rake spec
+```
 
 ## Authors
 
 Author: Dan Drabik, Lance Ivy
 
-Copyright (c) 2012-2013, Kickstarter
+Copyright (c) 2012-2018, Kickstarter
 
 Released under the MIT license
 

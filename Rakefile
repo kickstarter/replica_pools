@@ -7,8 +7,9 @@ task :default => :spec
 
 desc 'Bootstrap MySQL configuration'
 task :bootstrap do
-  system 'mysql -u root mysql < spec/config/bootstrap.sql'
+  puts "executing spec/config/bootstrap.sql\n\n"
+  system('mysql --verbose --user=root --host=127.0.0.1 --port=3309 mysql < spec/config/bootstrap.sql')
 end
 
 desc "Run specs"
-RSpec::Core::RakeTask.new(spec: :bootstrap)
+RSpec::Core::RakeTask.new(:spec)
