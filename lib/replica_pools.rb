@@ -11,6 +11,12 @@ require 'replica_pools/engine' if defined? Rails
 ActiveRecord::Base.send :include, ReplicaPools::ActiveRecordExtensions
 
 module ReplicaPools
+  class LeaderDisabled < StandardError
+    def to_s
+      "Leader database has been disabled. Re-enable with ReplicaPools.config.disable_leader = false."
+    end
+  end
+
   class << self
 
     def config
@@ -45,6 +51,7 @@ module ReplicaPools
     end
 
     def with_leader
+      raise LeaderDisabled.new if ReplicaPools.config.disable_leader
       proxy.with_leader{ yield }
     end
 

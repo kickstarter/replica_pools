@@ -9,6 +9,10 @@ module ReplicaPools
     # Defaults to false.
     attr_accessor :defaults_to_leader
 
+    # When true, the leader database will not be selectable.
+    # Default to false.
+    attr_accessor :disable_leader
+
     # The list of methods considered safe to send to a readonly connection.
     # Defaults are based on Rails version.
     attr_accessor :safe_methods
@@ -16,6 +20,7 @@ module ReplicaPools
     def initialize
       @environment        = 'development'
       @defaults_to_leader = false
+      @disable_leader     = false
       @safe_methods       = []
     end
   end

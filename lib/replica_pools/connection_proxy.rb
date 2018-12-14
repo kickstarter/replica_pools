@@ -55,6 +55,8 @@ module ReplicaPools
     end
 
     def with_leader
+      raise LeaderDisabled.new if ReplicaPools.config.disable_leader
+
       last_conn = self.current
       self.current = leader
       self.leader_depth += 1
