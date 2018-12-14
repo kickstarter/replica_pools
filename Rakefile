@@ -1,7 +1,6 @@
 require "bundler/gem_tasks"
 require "yaml"
-require 'rspec/core/rake_task'
-require "pp"
+require "rspec/core/rake_task"
 
 desc 'Default: run specs.'
 task :default => :spec
