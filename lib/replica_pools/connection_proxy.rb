@@ -62,8 +62,10 @@ module ReplicaPools
       self.leader_depth += 1
       yield
     ensure
-      self.leader_depth = [leader_depth - 1, 0].max
-      self.current = last_conn
+      if last_conn
+        self.leader_depth = [leader_depth - 1, 0].max
+        self.current = last_conn
+      end
     end
 
     def transaction(*args, &block)

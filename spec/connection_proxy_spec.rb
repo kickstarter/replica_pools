@@ -54,6 +54,19 @@ describe ReplicaPools do
       end
       @proxy.send(:within_leader_block?).should_not be
     end
+
+    context "with leader_disabled=true" do
+      before { ReplicaPools.config.disable_leader = true }
+      after { ReplicaPools.config.disable_leader = false }
+
+      it 'should not execute query, and maintain replica connection' do
+        @executed = false
+        @proxy.current = @proxy.current_replica
+        expect { @proxy.with_leader { @executed = true } }.to raise_error(ReplicaPools::LeaderDisabled)
+        @executed.should eq(false)
+        @proxy.current.name.should eq('ReplicaPools::DefaultDb1')
+      end
+    end
   end
 
   context "transaction" do
