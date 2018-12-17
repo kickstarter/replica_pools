@@ -55,13 +55,17 @@ module ReplicaPools
     end
 
     def with_leader
+      raise LeaderDisabled.new if ReplicaPools.config.disable_leader
+
       last_conn = self.current
       self.current = leader
       self.leader_depth += 1
       yield
     ensure
-      self.leader_depth = [leader_depth - 1, 0].max
-      self.current = last_conn
+      if last_conn
+        self.leader_depth = [leader_depth - 1, 0].max
+        self.current = last_conn
+      end
     end
 
     def transaction(*args, &block)
@@ -104,6 +108,7 @@ module ReplicaPools
     end
 
     def route_to(conn, method, *args, &block)
+      raise ReplicaPools::LeaderDisabled.new if ReplicaPools.config.disable_leader && conn == leader
       conn.retrieve_connection.send(method, *args, &block)
     rescue => e
       ReplicaPools.log :error, "Error during ##{method}: #{e}"
@@ -117,7 +122,7 @@ module ReplicaPools
       ReplicaPools.log :error, "Current Connection: #{current}"
       ReplicaPools.log :error, "Current Pool Name: #{current_pool.name}"
       ReplicaPools.log :error, "Current Pool Members: #{current_pool.replicas}"
-      ReplicaPools.log :error, "leader Depth: #{leader_depth}"
+      ReplicaPools.log :error, "Leader Depth: #{leader_depth}"
     end
   end
 end

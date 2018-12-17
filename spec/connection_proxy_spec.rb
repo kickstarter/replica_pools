@@ -54,6 +54,19 @@ describe ReplicaPools do
       end
       @proxy.send(:within_leader_block?).should_not be
     end
+
+    context "with leader_disabled=true" do
+      before { ReplicaPools.config.disable_leader = true }
+      after { ReplicaPools.config.disable_leader = false }
+
+      it 'should not execute query, and maintain replica connection' do
+        @executed = false
+        @proxy.current = @proxy.current_replica
+        expect { @proxy.with_leader { @executed = true } }.to raise_error(ReplicaPools::LeaderDisabled)
+        @executed.should eq(false)
+        @proxy.current.name.should eq('ReplicaPools::DefaultDb1')
+      end
+    end
   end
 
   context "transaction" do
@@ -124,6 +137,18 @@ describe ReplicaPools do
     end
   end
 
+  context "with leader_disabled=true" do
+    before { ReplicaPools.config.disable_leader = true }
+    after { ReplicaPools.config.disable_leader = false }
+    it 'should raise an error instead of sending dangerous methods to the leader' do
+      meths = [:insert, :update, :delete, :execute]
+      meths.each do |meth|
+        @default_replica1.stub(meth).and_raise(RuntimeError)
+        expect { @proxy.send(meth, @sql) }.to raise_error(ReplicaPools::LeaderDisabled)
+      end
+    end
+  end
+
   it "should not allow leader depth to get below 0" do
     @proxy.instance_variable_set("@leader_depth", -500)
     @proxy.instance_variable_get("@leader_depth").should == -500
@@ -132,7 +157,9 @@ describe ReplicaPools do
   end
 
   it 'should pre-generate safe methods' do
-    @proxy.should respond_to(:select_value)
+    ReplicaPools.config.safe_methods.each do |m|
+      @proxy.should respond_to(m)
+    end
   end
 
   it 'should dynamically generate unsafe methods' do
@@ -156,6 +183,20 @@ describe ReplicaPools do
     @default_replica1.should_not_receive(:select_all)
     @default_replica2.should_not_receive(:select_all)
     foo.reload
+  end
+
+  context "with leader_disabled=true" do
+    after { ReplicaPools.config.disable_leader = false }
+
+    it 'should reload models from a replica' do
+      foo = TestModel.create!
+      ReplicaPools.config.disable_leader = true
+      foo = TestModel.last
+      @leader.should_not_receive(:select_all)
+      @default_replica1.should_receive(:select_all).and_return(ActiveRecord::Result.new(["id"], ["1"]))
+      @default_replica2.should_not_receive(:select_all)
+      foo.reload
+    end
   end
 
   context "with_pool" do

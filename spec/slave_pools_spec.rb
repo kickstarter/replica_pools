@@ -22,6 +22,16 @@ describe ReplicaPools do
     ReplicaPools.with_leader
   end
 
+  describe 'with leader disabled' do
+    before { ReplicaPools.config.disable_leader = true }
+    after { ReplicaPools.config.disable_leader = false }
+
+    it 'should delegate with_leader call to connection proxy' do
+      @proxy.should_receive(:with_leader).exactly(0)
+      expect { ReplicaPools.with_leader }.to raise_error(ReplicaPools::LeaderDisabled)
+    end
+  end
+
   it 'should delegate current call to connection proxy' do
     @proxy.should_receive(:current).exactly(1)
     ReplicaPools.current

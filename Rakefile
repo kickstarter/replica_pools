@@ -1,14 +1,14 @@
 require "bundler/gem_tasks"
-
-require 'rspec/core/rake_task'
+require "yaml"
+require "rspec/core/rake_task"
 
 desc 'Default: run specs.'
 task :default => :spec
 
 desc 'Bootstrap MySQL configuration'
 task :bootstrap do
-  puts "executing spec/config/bootstrap.sql\n\n"
-  system('mysql --verbose --user=root --host=127.0.0.1 --port=3309 mysql < spec/config/bootstrap.sql')
+  config = YAML::load(ERB.new(File.read('spec/config/database.yml')).result)["test"]
+  system("mysql --verbose --user=#{config["username"]} --host=#{config["host"]} --port=#{config["port"]} mysql < spec/config/bootstrap.sql")
 end
 
 desc "Run specs"

@@ -160,6 +160,14 @@ Here's one way to accomplish that:
       end
     end
 
+## Disabling Leader
+
+To disable queries to the leader database -- for instance, in a production
+console -- set the disable_leader configuration to false. This will raise
+a ReplicaPools::LeaderDisabled error:
+
+  ReplicaPools.config.disable_leader = false
+
 ## Running specs
 
 Tests are run against MySQL 5.6 using docker-compose. 🐋
