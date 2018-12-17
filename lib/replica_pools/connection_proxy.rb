@@ -122,7 +122,7 @@ module ReplicaPools
       ReplicaPools.log :error, "Current Connection: #{current}"
       ReplicaPools.log :error, "Current Pool Name: #{current_pool.name}"
       ReplicaPools.log :error, "Current Pool Members: #{current_pool.replicas}"
-      ReplicaPools.log :error, "leader Depth: #{leader_depth}"
+      ReplicaPools.log :error, "Leader Depth: #{leader_depth}"
     end
   end
 end

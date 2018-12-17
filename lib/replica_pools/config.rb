@@ -10,7 +10,7 @@ module ReplicaPools
     attr_accessor :defaults_to_leader
 
     # When true, the leader database will not be selectable.
-    # Default to false.
+    # Defaults to false.
     attr_accessor :disable_leader
 
     # The list of methods considered safe to send to a readonly connection.
