@@ -185,6 +185,20 @@ describe ReplicaPools do
     foo.reload
   end
 
+  context "with leader_disabled=true" do
+    after { ReplicaPools.config.disable_leader = false }
+
+    it 'should reload models from a replica' do
+      foo = TestModel.create!
+      ReplicaPools.config.disable_leader = true
+      foo = TestModel.last
+      @leader.should_not_receive(:select_all)
+      @default_replica1.should_receive(:select_all).and_return(ActiveRecord::Result.new(["id"], ["1"]))
+      @default_replica2.should_not_receive(:select_all)
+      foo.reload
+    end
+  end
+
   context "with_pool" do
 
     it "should switch to the named pool" do

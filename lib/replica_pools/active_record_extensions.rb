@@ -5,7 +5,11 @@ module ReplicaPools
     end
 
     def reload(options = nil)
-      self.class.connection_proxy.with_leader { super }
+      if ReplicaPools.config.disable_leader
+        super
+      else
+        self.class.connection_proxy.with_leader { super }
+      end
     end
 
     module ClassMethods
