@@ -40,4 +40,12 @@ end
 
 RSpec.configure do |c|
   c.include ReplicaPools::Testing
+
+  # This gem mostly uses the old deprecated shoulda syntax. Support both versions for now.
+  c.expect_with :rspec do |c|
+    c.syntax = [:expect, :should]
+  end
+  c.mock_with :rspec do |c|
+    c.syntax = [:expect, :should]
+  end
 end
