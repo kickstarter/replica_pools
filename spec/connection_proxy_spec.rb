@@ -137,6 +137,18 @@ describe ReplicaPools do
     end
   end
 
+  context "with leader_disabled=true" do
+    before { ReplicaPools.config.disable_leader = true }
+    after { ReplicaPools.config.disable_leader = false }
+    it 'should raise an error instead of sending dangerous methods to the leader' do
+      meths = [:insert, :update, :delete, :execute]
+      meths.each do |meth|
+        @default_replica1.stub(meth).and_raise(RuntimeError)
+        expect { @proxy.send(meth, @sql) }.to raise_error(ReplicaPools::LeaderDisabled)
+      end
+    end
+  end
+
   it "should not allow leader depth to get below 0" do
     @proxy.instance_variable_set("@leader_depth", -500)
     @proxy.instance_variable_get("@leader_depth").should == -500
