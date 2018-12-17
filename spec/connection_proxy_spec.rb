@@ -157,7 +157,9 @@ describe ReplicaPools do
   end
 
   it 'should pre-generate safe methods' do
-    @proxy.should respond_to(:select_value)
+    ReplicaPools.config.safe_methods.each do |m|
+      @proxy.should respond_to(m)
+    end
   end
 
   it 'should dynamically generate unsafe methods' do
