@@ -13,13 +13,13 @@ module ReplicaPools
           [
             :select_all, :select_one, :select_value, :select_values,
             :select_rows, :select, :verify!, :raw_connection, :active?, :reconnect!,
-            :disconnect!, :reset_runtime, :log, :log_info
+            :disconnect!, :reset_runtime, :log, :log_info, :count
           ]
         elsif ActiveRecord::VERSION::MAJOR == 4
           [
             :select_all, :select_one, :select_value, :select_values,
             :select_rows, :select, :verify!, :raw_connection, :active?, :reconnect!,
-            :disconnect!, :reset_runtime, :log
+            :disconnect!, :reset_runtime, :log, :count
           ]
         elsif ActiveRecord::VERSION::MAJOR == 5
           [
@@ -29,7 +29,7 @@ module ReplicaPools
            :lookup_cast_type_from_column, :sanitize_limit,
            :combine_bind_parameters, :quote_table_name, :quote, :quote_column_names, :quote_table_names,
            :case_sensitive_comparison, :case_insensitive_comparison,
-           :schema_cache, :cacheable_query, :prepared_statements, :clear_cache!
+           :schema_cache, :cacheable_query, :prepared_statements, :clear_cache!, :count
           ]
         else
           warn "Unsupported ActiveRecord version #{ActiveRecord.version}. Please whitelist the safe methods."
