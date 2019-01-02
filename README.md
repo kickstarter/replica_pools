@@ -190,7 +190,7 @@ $ bundle exec rake spec
 
 Author: Dan Drabik, Lance Ivy
 
-Copyright (c) 2012-2018, Kickstarter
+Copyright (c) 2012-2019, Kickstarter
 
 Released under the MIT license
 
