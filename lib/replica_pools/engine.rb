@@ -27,7 +27,7 @@ module ReplicaPools
            :select_rows, :select, :select_prepared, :verify!, :raw_connection,
            :active?, :reconnect!, :disconnect!, :reset_runtime, :log,
            :lookup_cast_type_from_column, :sanitize_limit,
-           :combine_bind_parameters, :quote_table_name, :quote, :quote_column_names, :quote_table_names,
+           :combine_bind_parameters, :quote_table_name, :quote, :quote_column_names, :quote_table_names, :table_alias_for,
            :case_sensitive_comparison, :case_insensitive_comparison,
            :schema_cache, :cacheable_query, :prepared_statements, :clear_cache!, :column_name_for_operation
           ]
