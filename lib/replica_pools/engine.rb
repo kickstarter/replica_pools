@@ -21,7 +21,7 @@ module ReplicaPools
             :select_rows, :select, :verify!, :raw_connection, :active?, :reconnect!,
             :disconnect!, :reset_runtime, :log
           ]
-        elsif ActiveRecord::VERSION::MAJOR == 5
+        elsif [5, 6].include?(ActiveRecord::VERSION::MAJOR)
           [
            :select_all, :select_one, :select_value, :select_values,
            :select_rows, :select, :select_prepared, :verify!, :raw_connection,
