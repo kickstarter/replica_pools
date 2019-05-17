@@ -27,7 +27,7 @@ module ReplicaPools
 
     # finds valid pool configs
     def pool_configurations
-      ActiveRecord::Base.configurations.map do |name, config|
+      ActiveRecord::Base.configurations.to_h.map do |name, config|
         next unless name.to_s =~ /#{ReplicaPools.config.environment}_pool_(.*)_name_(.*)/
         [name, $1, $2]
       end.compact
