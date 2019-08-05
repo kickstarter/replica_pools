@@ -186,6 +186,10 @@ Then you can run tests with:
 $ bundle exec rake spec
 ```
 
+## Releasing a New Version
+
+First bump the version as appropriate in `lib/replica_pools/version.rb` and then run `bundle exec rake release`. This will push git tags to github and package and push the gem to rubygems.org.
+
 ## Authors
 
 Author: Dan Drabik, Lance Ivy
