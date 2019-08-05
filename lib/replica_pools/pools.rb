@@ -27,10 +27,20 @@ module ReplicaPools
 
     # finds valid pool configs
     def pool_configurations
-      ActiveRecord::Base.configurations.map do |name, config|
+      config_hash.map do |name, config|
         next unless name.to_s =~ /#{ReplicaPools.config.environment}_pool_(.*)_name_(.*)/
         [name, $1, $2]
       end.compact
+    end
+
+    def config_hash
+      if ActiveRecord::VERSION::MAJOR >= 6
+        # in Rails >= 6, `configurations` is an instance of ActiveRecord::DatabaseConfigurations
+        ActiveRecord::Base.configurations.to_h
+      else
+        # in Rails < 6, it's just a hash
+        ActiveRecord::Base.configurations
+      end
     end
 
     # generates a unique ActiveRecord::Base subclass for a single replica
