@@ -34,7 +34,7 @@ module ReplicaPools
       if raw_binds.blank? && relation.is_a?(ActiveRecord::Relation)
         arel, binds = relation.arel, relation.bind_values
       else
-        arel, binds = relation, raw_binds.to_a
+        arel, binds = relation, Array(raw_binds)
       end
 
       sql = to_sql(arel, binds)
