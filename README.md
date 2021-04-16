@@ -194,7 +194,7 @@ First bump the version as appropriate in `lib/replica_pools/version.rb` and then
 
 Author: Dan Drabik, Lance Ivy
 
-Copyright (c) 2012-2019, Kickstarter
+Copyright (c) 2012-2021, Kickstarter
 
 Released under the MIT license
 
