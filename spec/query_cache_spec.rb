@@ -1,5 +1,6 @@
 require 'rack'
 require_relative 'spec_helper'
+require_relative 'config/test_model'
 
 describe ReplicaPools::QueryCache do
   before(:each) do
@@ -101,6 +102,18 @@ describe ReplicaPools::QueryCache do
       it 'should invalidate the cache on insert, delete and update' do
         executor.wrap { insert_update_delete_lambda }
       end
+    end
+  end
+
+  describe '.pluck regression test' do
+    it 'should work with query caching' do
+      TestModel.connection.enable_query_cache!
+      expect(TestModel.pluck(:id).count).to eql TestModel.all.count
+    end
+
+    it 'should work if query cache is not enabled' do
+      TestModel.connection.disable_query_cache!
+      expect(TestModel.pluck(:id).count).to eql TestModel.all.count
     end
   end
 end
