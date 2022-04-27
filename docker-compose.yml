@@ -1,8 +1,8 @@
-version: '2.0'
+version: "2.0"
 
 services:
   mysql:
-    image: mysql:5.6
+    image: mysql:5.7
     ports:
       - 127.0.0.1:3309:3306
     environment:
