@@ -1,3 +1,5 @@
+require 'logger'
+
 require 'active_record'
 require 'replica_pools/config'
 require 'replica_pools/pool'
@@ -64,7 +66,7 @@ module ReplicaPools
     end
 
     def logger
-      ActiveRecord::Base.logger
+      ActiveRecord::Base.logger || Logger.new(STDOUT)
     end
   end
 end
