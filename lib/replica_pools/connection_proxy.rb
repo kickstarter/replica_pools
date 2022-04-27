@@ -11,26 +11,18 @@ module ReplicaPools
     class << self
       def generate_safe_delegations
         ReplicaPools.config.safe_methods.each do |method|
-          generate_safe_delegation(method) unless instance_methods.include?(method)
+          self.define_method(method) do |*args, &block|
+            route_to(current, method, *args, &block)
+          end unless instance_methods.include?(method)
         end
-      end
-
-      protected
-
-      def generate_safe_delegation(method)
-        class_eval <<-END, __FILE__, __LINE__ + 1
-          def #{method}(*args, &block)
-            route_to(current, :#{method}, *args, &block)
-          end
-        END
       end
     end
 
     def initialize(leader, pools)
-      @leader       = leader
-      @replica_pools  = pools
-      @leader_depth = 0
-      @current_pool = default_pool
+      @leader        = leader
+      @replica_pools = pools
+      @leader_depth  = 0
+      @current_pool  = default_pool
 
       if ReplicaPools.config.defaults_to_leader
         @current = leader
@@ -91,20 +83,14 @@ module ReplicaPools
     # Safe methods have been generated during `setup!`.
     # Creates a method to speed up subsequent calls.
     def method_missing(method, *args, &block)
-      generate_unsafe_delegation(method)
+      self.class.define_method(method) do |*args, &block|
+        route_to(leader, method, *args, &block)
+      end
       send(method, *args, &block)
     end
 
     def within_leader_block?
       leader_depth > 0
-    end
-
-    def generate_unsafe_delegation(method)
-      self.class_eval <<-END, __FILE__, __LINE__ + 1
-        def #{method}(*args, &block)
-          route_to(leader, :#{method}, *args, &block)
-        end
-      END
     end
 
     def route_to(conn, method, *args, &block)
