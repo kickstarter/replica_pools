@@ -10,26 +10,69 @@ module ReplicaPools
 
       ReplicaPools.config.safe_methods =
         if ActiveRecord::VERSION::MAJOR == 3
-          [
-            :select_all, :select_one, :select_value, :select_values,
-            :select_rows, :select, :verify!, :raw_connection, :active?, :reconnect!,
-            :disconnect!, :reset_runtime, :log, :log_info
+          %i[
+            active?
+            disconnect!
+            log
+            log_info
+            raw_connection
+            reconnect!
+            reset_runtime
+            select
+            select_all
+            select_one
+            select_rows
+            select_value
+            select_values
+            verify!
           ]
         elsif ActiveRecord::VERSION::MAJOR == 4
-          [
-            :select_all, :select_one, :select_value, :select_values,
-            :select_rows, :select, :verify!, :raw_connection, :active?, :reconnect!,
-            :disconnect!, :reset_runtime, :log
+          %i[
+            active?
+            disconnect!
+            log
+            raw_connection
+            reconnect!
+            reset_runtime
+            select
+            select_all
+            select_one
+            select_rows
+            select_value
+            select_values
+            verify!
           ]
         elsif [5, 6].include?(ActiveRecord::VERSION::MAJOR)
-          [
-           :select_all, :select_one, :select_value, :select_values,
-           :select_rows, :select, :select_prepared, :verify!, :raw_connection,
-           :active?, :reconnect!, :disconnect!, :reset_runtime, :log,
-           :lookup_cast_type_from_column, :sanitize_limit,
-           :combine_bind_parameters, :quote_table_name, :quote, :quote_column_names, :quote_table_names, :table_alias_for,
-           :case_sensitive_comparison, :case_insensitive_comparison,
-           :schema_cache, :cacheable_query, :prepared_statements, :clear_cache!, :column_name_for_operation
+          %i[
+           active?
+           cacheable_query
+           case_insensitive_comparison
+           case_sensitive_comparison
+           clear_cache!
+           column_name_for_operation
+           combine_bind_parameters
+           disconnect!
+           log
+           lookup_cast_type_from_column
+           prepared_statements
+           quote
+           quote_column_names
+           quote_table_name
+           quote_table_names
+           raw_connection
+           reconnect!
+           reset_runtime
+           sanitize_limit
+           schema_cache
+           select
+           select_all
+           select_one
+           select_prepared
+           select_rows
+           select_value
+           select_values
+           table_alias_for
+           verify!
           ]
         else
           warn "Unsupported ActiveRecord version #{ActiveRecord.version}. Please whitelist the safe methods."
