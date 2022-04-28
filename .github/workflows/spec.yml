@@ -1,0 +1,24 @@
+name: Spec
+on:
+  push:
+jobs:
+  Spec:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ruby:
+          - "2.7"
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+      - name: Start MySQL
+        run: docker compose up --detach
+      - name: Setup
+        run: |
+          gem install bundler
+          bundle install --jobs 4 --retry 3
+          bundle exec rake bootstrap
+      - name: Run spec
+        run: bundle exec rake spec

@@ -1,5 +1,7 @@
-spec/debug.log
-experimental
+.bundle/
 .DS_Store
+.ruby-version
+spec/*.log
+experimental
 Gemfile.lock
 *.gem

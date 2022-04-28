@@ -1,0 +1,61 @@
+# https://taskfile.dev
+---
+version: "3"
+
+dotenv:
+  - .env
+
+includes:
+  ruby: ~/.ksr/tasks/ruby.yml
+  mysql: ~/.ksr/tasks/mysql.yml
+
+vars:
+  RUBY_VERSION: 2.7.5
+
+tasks:
+  init:
+    desc: Initialize project
+    cmds:
+      - task: ruby:rbenv:install
+      - task: ruby:bundler:setup
+      - task: ruby:bundler:config
+      - task: ruby:bundle
+      - task: up
+      - bundle exec rake bootstrap
+
+  ruby:bundler:config:
+    label: ruby:bundle:config
+    vars:
+      OPENSSL_PREFIX: { sh: brew --prefix openssl }
+    cmds:
+      - bundle config set --local build.mysql2 --with-opt-dir={{.OPENSSL_PREFIX}}
+    status:
+      - >-
+        grep -F 'BUNDLE_BUILD__MYSQL2: "--with-opt-dir={{.OPENSSL_PREFIX}}"' .bundle/config
+
+  test:
+    desc: Test project
+    cmds:
+      - bundle exec rake spec
+
+  release:
+    desc: Release gem
+    cmds:
+      - bundle exec rake release
+
+  up:
+    desc: Start local services
+    cmds:
+      - docker compose up --detach
+      - task: mysql:await
+        vars:
+          ENTRYPOINT: docker compose run --rm --entrypoint mysql mysql
+          HOST: mysql
+
+  down:
+    desc: Stop local services
+    cmds:
+      - docker compose down
+
+  clean:
+    desc: Clean project

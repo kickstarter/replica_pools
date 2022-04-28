@@ -2,8 +2,7 @@
 
 Easy Single Leader / Multiple Replica Setup for use in Ruby/Rails projects
 
-[![Build
-Status](https://travis-ci.org/kickstarter/replica_pools.png?branch=owningit)](https://travis-ci.org/kickstarter/replica_pools)
+[![Spec](https://github.com/kickstarter/replica_pools/actions/workflows/spec.yml/badge.svg)](https://github.com/kickstarter/replica_pools/actions/workflows/spec.yml)
 
 ## Overview
 
@@ -11,22 +10,22 @@ ReplicaPools replaces ActiveRecord's connection with a proxy that routes databas
 
 ReplicaPools also provides helpers so you can customize your replica strategy. You can organize replicas into pools and cycle through them (e.g. in a before_filter). You can make the connection default to the leader, or the default replica pool, and then use block helpers to temporarily change the behavior (e.g. in an around_filter).
 
-* Uses a naming convention in database.yml to designate replica pools.
-* Defaults to a given replica pool, but may also be configured to default to leader.
-* Routes database interactions (queries) to the right connection
-  * Whitelisted queries go to the current connection (might be a replica).
-  * All queries inside a transaction run on leader.
-  * All other queries are also sent to the leader connection.
-* Supports ActiveRecord's in-memory query caching.
-* Helper methods can be used to easily load balance replicas, route traffic to different replica pools, or run directly against leader. (examples below)
+- Uses a naming convention in database.yml to designate replica pools.
+- Defaults to a given replica pool, but may also be configured to default to leader.
+- Routes database interactions (queries) to the right connection
+  - Whitelisted queries go to the current connection (might be a replica).
+  - All queries inside a transaction run on leader.
+  - All other queries are also sent to the leader connection.
+- Supports ActiveRecord's in-memory query caching.
+- Helper methods can be used to easily load balance replicas, route traffic to different replica pools, or run directly against leader. (examples below)
 
 ## Not Supported
 
-* Sharding.
-* Automatic load balancing strategies.
-* Replica weights. You can accomplish this in your own load balancing strategy.
-* Whitelisting models that always use leader.
-* Blacklisting poorly performing replicas. This could cause load spikes on your leader. Whatever provisions your database.yml should make this choice.
+- Sharding.
+- Automatic load balancing strategies.
+- Replica weights. You can accomplish this in your own load balancing strategy.
+- Whitelisting models that always use leader.
+- Blacklisting poorly performing replicas. This could cause load spikes on your leader. Whatever provisions your database.yml should make this choice.
 
 ## Installation and Setup
 
@@ -166,7 +165,7 @@ To disable queries to the leader database -- for instance, in a production
 console -- set the disable_leader configuration to false. This will raise
 a ReplicaPools::LeaderDisabled error:
 
-  ReplicaPools.config.disable_leader = false
+ReplicaPools.config.disable_leader = false
 
 ## Running specs
 
@@ -204,10 +203,10 @@ Released under the MIT license
 
 The project is based on:
 
-* https://github.com/schoefmax/multi_db
+- https://github.com/schoefmax/multi_db
 
 ### Masochism
 
 The original leader/replica plugin:
 
-* http://github.com/technoweenie/masochism
+- http://github.com/technoweenie/masochism
