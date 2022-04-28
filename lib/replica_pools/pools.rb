@@ -6,12 +6,12 @@ module ReplicaPools
 
     def initialize
       pools = {}
-      pool_configurations.group_by{|_, name, _| name }.each do |name, set|
+      pool_configurations.group_by{ |_, name, _| name }.each do |name, set|
         pools[name.to_sym] = ReplicaPools::Pool.new(
           name,
-          set.map{ |conn_name, _, replica_name|
+          set.map do |conn_name, _, replica_name|
             connection_class(name, replica_name, conn_name)
-          }
+          end
         )
       end
 
@@ -47,16 +47,16 @@ module ReplicaPools
     def connection_class(pool_name, replica_name, connection_name)
       class_name = "#{pool_name.camelize}#{replica_name.camelize}"
 
-      ReplicaPools.module_eval %Q{
-        class #{class_name} < ActiveRecord::Base
-          self.abstract_class = true
-          establish_connection :#{connection_name}
-          def self.connection_config
-            configurations[#{connection_name.to_s.inspect}]
-          end
+      ReplicaPools.const_set(class_name, Class.new(ActiveRecord::Base) do |c|
+        c.abstract_class = true
+        c.define_singleton_method(:connection_config) do
+          configurations[connection_name.to_s]
         end
-      }, __FILE__, __LINE__
-      ReplicaPools.const_get(class_name)
+      end)
+
+      ReplicaPools.const_get(class_name).tap do |c|
+        c.establish_connection(connection_name.to_sym)
+      end
     end
   end
 end
