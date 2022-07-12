@@ -33,7 +33,7 @@ module ReplicaPools
       # this ivar is for ConnectionAdapter compatibility
       # some gems (e.g. newrelic_rpm) will actually use
       # instance_variable_get(:@config) to find it.
-      @config = current.connection_config
+      @config = current.connection_db_config
     end
 
     def with_pool(pool_name = 'default')

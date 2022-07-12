@@ -50,7 +50,7 @@ module ReplicaPools
       ReplicaPools.const_set(class_name, Class.new(ActiveRecord::Base) do |c|
         c.abstract_class = true
         c.define_singleton_method(:connection_config) do
-          configurations[connection_name.to_s]
+          configurations.configs_for(connection_name.to_s)
         end
       end)
 
