@@ -36,7 +36,9 @@ module ReplicaPools
     def config_hash
       if ActiveRecord::VERSION::MAJOR >= 6
         # in Rails >= 6, `configurations` is an instance of ActiveRecord::DatabaseConfigurations
-        ActiveRecord::Base.configurations.to_h
+        ActiveRecord::Base.configurations.configs_for.map do |c|
+          [c.env_name, c.configuration_hash.transform_keys(&:to_s)]
+        end.to_h
       else
         # in Rails < 6, it's just a hash
         ActiveRecord::Base.configurations
