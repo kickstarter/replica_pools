@@ -19,11 +19,8 @@ module ReplicaPools
     # connection for cache logic, but ultimately pass its query
     # through to whatever connection is current.
     def select_all(*args)
-      # there may be more args for Rails 5.0+, but we only care about arel, name, and binds for caching.
       relation, name, raw_binds = args
 
-      # Rails 6.2 breaks this method as locked? is no longer available
-      # https://github.com/kickstarter/replica_pools/issues/26
       if !query_cache_enabled || locked?(relation)
         return route_to(current, :select_all, *args)
       end
@@ -45,6 +42,14 @@ module ReplicaPools
       else
         cache_sql(sql, name, binds) { route_to(current, :select_all, *args) }
       end
+    end
+
+    # If arel is locked this is a SELECT ... FOR UPDATE or somesuch. Such
+    # queries should not be cached.
+    def locked?(arel)
+      # This method was copied from Rails 6.1, since it has been removed in 7.0
+      arel = arel.arel if arel.is_a?(ActiveRecord::Relation)
+      arel.respond_to?(:locked) && arel.locked
     end
 
     # these can use the unsafe delegation built into ConnectionProxy

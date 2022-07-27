@@ -42,7 +42,7 @@ module ReplicaPools
             select_values
             verify!
           ]
-        elsif [5, 6].include?(ActiveRecord::VERSION::MAJOR)
+        elsif [5, 6, 7].include?(ActiveRecord::VERSION::MAJOR)
           %i[
            active?
            cacheable_query
