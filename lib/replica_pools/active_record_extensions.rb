@@ -20,7 +20,7 @@ module ReplicaPools
       # Make sure transactions run on leader
       # Even if they're initiated from ActiveRecord::Base
       # (which doesn't have our hijack).
-      def transaction(options = {}, &block)
+      def transaction(**options, &block)
         if self.connection.kind_of?(ConnectionProxy)
           super
         else
