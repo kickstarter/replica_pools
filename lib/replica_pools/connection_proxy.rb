@@ -64,8 +64,8 @@ module ReplicaPools
       end
     end
 
-    def transaction(*args, &block)
-      with_leader { leader.transaction(*args, &block) }
+    def transaction(...)
+      with_leader { leader.transaction(...) }
     end
 
     def next_replica!
@@ -86,9 +86,9 @@ module ReplicaPools
     # Proxies any unknown methods to leader.
     # Safe methods have been generated during `setup!`.
     # Creates a method to speed up subsequent calls.
-    def method_missing(method, *args, &block)
-      self.class.define_method(method) do |*args, &block|
-        route_to(leader, method, *args, &block).tap do
+    def method_missing(method, *args, **kwargs, &block)
+      self.class.define_method(method) do |*args, **kwargs, &block|
+        route_to(leader, method, *args, **kwargs, &block).tap do
           if %i[insert delete update].include?(method)
             leader.retrieve_connection.clear_query_cache
           end
