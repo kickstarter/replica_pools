@@ -18,11 +18,11 @@ module ReplicaPools
     # select_all is trickier. it needs to use the leader
     # connection for cache logic, but ultimately pass its query
     # through to whatever connection is current.
-    def select_all(*args)
+    def select_all(*args, **kwargs)
       relation, name, raw_binds = args
 
       if !query_cache_enabled || locked?(relation)
-        return route_to(current, :select_all, *args)
+        return route_to(current, :select_all, *args, **kwargs)
       end
 
       # duplicate binds_from_relation behavior introduced in 4.2.
@@ -38,9 +38,9 @@ module ReplicaPools
       args[2] = binds
 
       if Gem::Version.new(ActiveRecord.version) < Gem::Version.new('5.1')
-        cache_sql(sql, binds) { route_to(current, :select_all, *args) }
+        cache_sql(sql, binds) { route_to(current, :select_all, *args, **kwargs) }
       else
-        cache_sql(sql, name, binds) { route_to(current, :select_all, *args) }
+        cache_sql(sql, name, binds) { route_to(current, :select_all, *args, **kwargs) }
       end
     end
 
