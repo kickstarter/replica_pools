@@ -39,12 +39,12 @@ module ReplicaPools
         return ActiveRecord::Base.configurations
       end
 
-      if ActiveRecord::VERSION::MAJOR == 6 && ActiveRecord::VERSION::MINOR < 2
-        # in Rails < 6.2, `configurations` is an instance of ActiveRecord::DatabaseConfigurations
+      if ActiveRecord::VERSION::MAJOR == 6 && ActiveRecord::VERSION::MINOR < 1
+        # in Rails = 6.0, `configurations` is an instance of ActiveRecord::DatabaseConfigurations
         return ActiveRecord::Base.configurations.to_h
       end
 
-      # in Rails >= 6.2, ActiveRecord::Base.configurations.to_h has been deprecated
+      # in Rails >= 6.1, ActiveRecord::Base.configurations.to_h has been deprecated
       ActiveRecord::Base.configurations.configs_for.map do |c|
         [c.env_name, c.configuration_hash.transform_keys(&:to_s)]
       end.to_h
