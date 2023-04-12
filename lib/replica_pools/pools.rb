@@ -34,18 +34,20 @@ module ReplicaPools
     end
 
     def config_hash
-      if ActiveRecord::VERSION::MAJOR > 6
-        # in Rails = 7, ActiveRecord::Base.configurations.to_h has been deprecated
-        ActiveRecord::Base.configurations.configs_for.map do |c|
-          [c.env_name, c.configuration_hash.transform_keys(&:to_s)]
-        end.to_h
-      elsif ActiveRecord::VERSION::MAJOR == 6
-        # in Rails = 6, `configurations` is an instance of ActiveRecord::DatabaseConfigurations
-        ActiveRecord::Base.configurations.to_h
-      else
+      if ActiveRecord::VERSION::MAJOR < 6
         # in Rails < 6, it's just a hash
-        ActiveRecord::Base.configurations
+        return ActiveRecord::Base.configurations
       end
+
+      if ActiveRecord::VERSION::MAJOR == 6 && ActiveRecord::VERSION::MINOR < 2
+        # in Rails < 6.2, `configurations` is an instance of ActiveRecord::DatabaseConfigurations
+        return ActiveRecord::Base.configurations.to_h
+      end
+
+      # in Rails >= 6.2, ActiveRecord::Base.configurations.to_h has been deprecated
+      ActiveRecord::Base.configurations.configs_for.map do |c|
+        [c.env_name, c.configuration_hash.transform_keys(&:to_s)]
+      end.to_h
     end
 
     # generates a unique ActiveRecord::Base subclass for a single replica
