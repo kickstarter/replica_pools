@@ -36,7 +36,7 @@ module ReplicaPools
 
       # 6.0 supports current.connection_config
       # but warns of impending deprecation in 6.2
-      if ActiveRecord::VERSION::MAJOR >= 6
+      if ActiveRecord::VERSION::MAJOR >= 6 && ActiveRecord::VERSION::MINOR >= 1
         @config = current.connection_db_config
       else
         @config = current.connection_config
