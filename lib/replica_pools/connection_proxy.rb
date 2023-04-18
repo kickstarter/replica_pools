@@ -39,7 +39,7 @@ module ReplicaPools
     def self.get_connection_config_method_name
       # 6.1 supports current.connection_config
       # but warns of impending deprecation in 6.2
-      if [ActiveRecord::VERSION::MAJOR, ActiveRecord::VERSION::MINOR].join(".").to_f >= 6.1
+      if ActiveRecord::VERSION::STRING.to_f >= 6.1
         :connection_db_config
       else
         :connection_config
