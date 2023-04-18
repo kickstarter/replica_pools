@@ -33,10 +33,16 @@ module ReplicaPools
       # this ivar is for ConnectionAdapter compatibility
       # some gems (e.g. newrelic_rpm) will actually use
       # instance_variable_get(:@config) to find it.
-      if ActiveRecord::VERSION::MAJOR >= 7
-        @config = current.connection_db_config
+      @config = current.send(ReplicaPools::ConnectionProxy.get_connection_config_method_name)
+    end
+
+    def self.get_connection_config_method_name
+      # 6.1 supports current.connection_config
+      # but warns of impending deprecation in 6.2
+      if ActiveRecord::VERSION::STRING.to_f >= 6.1
+        :connection_db_config
       else
-        @config = current.connection_config
+        :connection_config
       end
     end
 

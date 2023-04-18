@@ -53,11 +53,11 @@ module ReplicaPools
     # generates a unique ActiveRecord::Base subclass for a single replica
     def connection_class(pool_name, replica_name, connection_name)
       class_name = "#{pool_name.camelize}#{replica_name.camelize}"
-
+      connection_config_method_name = ReplicaPools::ConnectionProxy.get_connection_config_method_name
       ReplicaPools.const_set(class_name, Class.new(ActiveRecord::Base) do |c|
         c.abstract_class = true
-        c.define_singleton_method(:connection_config) do
-          configurations.configs_for(connection_name.to_s)
+        c.define_singleton_method(connection_config_method_name) do
+          configurations.configs_for(env_name: connection_name.to_s, include_hidden: true)
         end
       end)
 
@@ -65,5 +65,6 @@ module ReplicaPools
         c.establish_connection(connection_name.to_sym)
       end
     end
+
   end
 end
