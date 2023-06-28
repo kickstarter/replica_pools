@@ -57,7 +57,11 @@ module ReplicaPools
       ReplicaPools.const_set(class_name, Class.new(ActiveRecord::Base) do |c|
         c.abstract_class = true
         c.define_singleton_method(connection_config_method_name) do
-          configurations.configs_for(env_name: connection_name.to_s, include_hidden: true)
+          if ActiveRecord::VERSION::MAJOR == 6
+            configurations.configs_for(env_name: connection_name.to_s, include_replicas: true)
+          elsif ActiveRecord::VERSION::MAJOR == 7
+            configurations.configs_for(env_name: connection_name.to_s, include_hidden: true)
+          end
         end
       end)
 
