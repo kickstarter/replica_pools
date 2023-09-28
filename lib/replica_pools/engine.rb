@@ -50,6 +50,7 @@ module ReplicaPools
            case_sensitive_comparison
            clear_cache!
            column_name_for_operation
+           column_name_matcher
            column_name_with_order_matcher
            combine_bind_parameters
            disconnect!
