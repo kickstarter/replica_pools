@@ -64,10 +64,6 @@ module ReplicaPools
           end
         end
       end)
-
-      ReplicaPools.const_get(class_name).tap do |c|
-        c.establish_connection(connection_name.to_sym)
-      end
     end
 
   end
