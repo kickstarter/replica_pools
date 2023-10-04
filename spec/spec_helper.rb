@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'bundler/setup'
 require 'logger'
+require 'pry'
 
 module Rails
   def self.env
@@ -26,7 +27,24 @@ module ReplicaPools::Testing
   def create_replica_aliases(proxy)
     proxy.replica_pools.each do |name, pool|
       pool.replicas.each.with_index do |replica, i|
-        instance_variable_set("@#{name}_replica#{i + 1}", replica.retrieve_connection)
+        instance_variable_set("@#{name}_replica#{i + 1}_connection_pool", replica.connection_pool)
+        replica_connection = instance_variable_get("@#{name}_replica#{i + 1}_connection_pool").checkout
+
+        replica_connection_pool = instance_double("ActiveRecord::ConnectionPool")
+        allow(replica).to receive(:connection_pool).and_return(replica_connection_pool)
+
+        allow(replica_connection_pool).to receive(:checkout).and_return(replica_connection)
+        allow(replica_connection_pool).to receive(:checkin)
+
+        instance_variable_set("@#{name}_replica#{i + 1}", replica_connection)
+      end
+    end
+  end
+
+  def close_replica_aliases(proxy)
+    proxy.replica_pools.each do |name, pool|
+      pool.replicas.each.with_index do |replica, i|
+        instance_variable_get("@#{name}_replica#{i + 1}_connection_pool").checkin(instance_variable_get("@#{name}_replica#{i + 1}"))
       end
     end
   end

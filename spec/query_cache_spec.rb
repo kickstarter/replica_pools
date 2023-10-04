@@ -6,13 +6,32 @@ describe ReplicaPools::QueryCache do
   before(:each) do
     @sql = 'SELECT NOW()'
 
+    # here we save the real connection pool and checkout a connection from it
+    # this lets us verify calls to specific connections in the specs then check back in
+    # those connections once each test block is done
     @proxy = ReplicaPools.proxy
-    @leader = @proxy.leader.retrieve_connection
+    @leader_connection_pool = @proxy.leader.connection_pool
+    @leader = @leader_connection_pool.checkout
+
+    # need to checkout the replica connections before connection_pool is mocked since the
+    # the same pool object is used for leader and replicas since they have the same connection config
+    create_replica_aliases(@proxy)
+
+    # we now mock out the connection pool so it doesn't checkout new connections mid spec run
+    # instead we pass our already checked out connection in each test
+    leader_connection_pool = instance_double("ActiveRecord::ConnectionPool")
+    allow(@proxy.leader).to receive(:connection_pool).and_return(leader_connection_pool)
+    allow(leader_connection_pool).to receive(:checkout).and_return(@leader)
+    allow(leader_connection_pool).to receive(:checkin)
 
     @leader.clear_query_cache
 
     reset_proxy(@proxy)
-    create_replica_aliases(@proxy)
+  end
+
+  after(:each) do
+    @leader_connection_pool.checkin(@leader)
+    close_replica_aliases(@proxy)
   end
 
   it 'should cache queries using select_all' do

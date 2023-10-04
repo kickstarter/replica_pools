@@ -7,6 +7,7 @@ test: &test
   encoding: utf8
   read_timeout: 1
   database: test_db
+  pool: 10 # pool needs to be large enough to create a connection for each pool simultaneously
 
 readonly_login: &readonly_login
   <<: *test
