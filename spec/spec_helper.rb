@@ -1,7 +1,6 @@
 require 'rubygems'
 require 'bundler/setup'
 require 'logger'
-require 'pry'
 
 module Rails
   def self.env
