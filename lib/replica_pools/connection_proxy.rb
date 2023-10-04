@@ -94,11 +94,7 @@ module ReplicaPools
     # Creates a method to speed up subsequent calls.
     def method_missing(method, *args, **kwargs, &block)
       self.class.define_method(method) do |*args, **kwargs, &block|
-        route_to(leader, method, *args, **kwargs, &block).tap do
-          if %i[insert delete update].include?(method)
-            leader.retrieve_connection.clear_query_cache
-          end
-        end
+        route_to(leader, method, *args, **kwargs, &block)
       end
       send(method, *args, &block)
     end
@@ -113,6 +109,11 @@ module ReplicaPools
       begin
         # get a connection from the connection_pool
         connection = conn.connection_pool.checkout
+
+        if %i[insert delete update].include?(method)
+          connection.clear_query_cache
+        end
+
         connection.send(method, *args, **keyword_args, &block)
       ensure
         conn.connection_pool.checkin(connection)
