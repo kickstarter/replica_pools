@@ -2,8 +2,8 @@ version: "2.0"
 
 services:
   mysql:
-    image: mysql:5.7
+    image: mysql:8.0
     ports:
-      - 127.0.0.1:3309:3306
+      - 3309:3306
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "true"
