@@ -116,7 +116,7 @@ module ReplicaPools
 
         connection.send(method, *args, **keyword_args, &block)
       ensure
-        conn.connection_pool.checkin(connection)
+        conn.connection_pool.checkin(connection) if connection
       end
     rescue => e
       ReplicaPools.log :error, "Error during ##{method}: #{e}"
