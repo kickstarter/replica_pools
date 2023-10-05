@@ -109,7 +109,10 @@ module ReplicaPools
 
     def route_to(conn, method, *args, **keyword_args, &block)
       raise ReplicaPools::LeaderDisabled.new if ReplicaPools.config.disable_leader && conn == leader
-      conn.retrieve_connection.send(method, *args, **keyword_args, &block)
+      connection = conn.retrieve_connection
+
+      connection.verify!
+      connection.send(method, *args, **keyword_args, &block)
     rescue => e
       ReplicaPools.log :error, "Error during ##{method}: #{e}"
       log_proxy_state
