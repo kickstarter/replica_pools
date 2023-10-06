@@ -173,21 +173,22 @@ Tests are run against MySQL 5.6 using docker-compose. 🐋
 
 To get set up, first run:
 
-```bash
-$ docker-compose up
-$ bundle install
-$ bundle exec rake bootstrap
-```
+    docker-compose up
+    bundle install
+    bundle exec rake bootstrap
 
 Then you can run tests with:
 
-```bash
-$ bundle exec rake spec
-```
+    bundle exec rake spec
 
 ## Releasing a New Version
 
-First bump the version as appropriate in `lib/replica_pools/version.rb` and then run `bundle exec rake release`. This will push git tags to github and package and push the gem to rubygems.org.
+Follow these steps to publish a new version to RubyGems:
+
+1. Increment the version in [lib/replica_pools/version.rb](./lib/replica_pools/version.rb). We follow [Semantic Versioning](http://semver.org).
+2. Push changes to GitHub
+3. Create a [new release](https://github.com/kickstarter/replica_pools/releases)
+4. Ensure the [Test and Release](https://github.com/kickstarter/replica_pools/actions/workflows/test-release.yml) GitHub Action succeeds in pushing a new gem to RubyGems
 
 ## Authors
 
@@ -203,10 +204,10 @@ Released under the MIT license
 
 The project is based on:
 
-- https://github.com/schoefmax/multi_db
+- [github.com/schoefmax/multi_db](https://github.com/schoefmax/multi_db)
 
 ### Masochism
 
 The original leader/replica plugin:
 
-- http://github.com/technoweenie/masochism
+- [github.com/technoweenie/masochism](http://github.com/technoweenie/masochism)
