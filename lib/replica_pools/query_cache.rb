@@ -11,6 +11,7 @@ module ReplicaPools
     # these methods can all use the leader connection
     (query_cache_methods - [:select_all]).each do |method_name|
       define_method(method_name) do |*args, &block|
+        get_connection(leader)
         ActiveRecord::Base.connection.send(method_name, *args, &block)
       end
     end
@@ -22,7 +23,7 @@ module ReplicaPools
       relation, name, raw_binds = args
 
       if !query_cache_enabled || locked?(relation)
-        return route_to(current, :select_all, *args, **kwargs)
+        return route_to(get_connection(current), :select_all, *args, **kwargs)
       end
 
       # duplicate binds_from_relation behavior introduced in 4.2.
@@ -38,9 +39,9 @@ module ReplicaPools
       args[2] = binds
 
       if Gem::Version.new(ActiveRecord.version) < Gem::Version.new('5.1')
-        cache_sql(sql, binds) { route_to(current, :select_all, *args, **kwargs) }
+        cache_sql(sql, binds) { route_to(get_connection(current), :select_all, *args, **kwargs) }
       else
-        cache_sql(sql, name, binds) { route_to(current, :select_all, *args, **kwargs) }
+        cache_sql(sql, name, binds) { route_to(get_connection(current), :select_all, *args, **kwargs) }
       end
     end
 
