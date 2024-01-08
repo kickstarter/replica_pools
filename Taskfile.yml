@@ -39,6 +39,14 @@ tasks:
       - bundle exec rake spec
 
   release:
+    desc: Publish gem with GitHub
+    vars:
+      VERSION:
+        sh: bundle exec ruby -r replica_pools -e 'puts "v#{ReplicaPools::VERSION}"'
+    cmds:
+      - gh release create {{.VERSION}} --generate-notes
+
+  release:manual:
     desc: Release gem
     cmds:
       - bundle exec rake release

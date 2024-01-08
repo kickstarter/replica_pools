@@ -42,8 +42,14 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.2"
-      - uses: kickstarter/actions/setup-rubygems@main
-        with:
-          api-key: ${{ secrets.RUBYGEMS_API_KEY }}
+      # The kickstarter/actions/setup-rubygems action is not available
+      # because this is a public repo
+      - run: |
+          mkdir -p ~/.gem
+          cat <<-YAML > ~/.gem/credentials
+          ---
+          :rubygems_api_key: ${{ secrets.RUBYGEMS_API_KEY }}
+          YAML
+          chmod 0600 ~/.gem/credentials
       - run: bundle install
       - run: bundle exec rake gem:push
