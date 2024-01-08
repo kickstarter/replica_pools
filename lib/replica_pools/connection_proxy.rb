@@ -100,7 +100,7 @@ module ReplicaPools
           end
         end
       end
-      send(method, *args, &block)
+      send(method, *args, **kwargs, &block)
     end
 
     def within_leader_block?
