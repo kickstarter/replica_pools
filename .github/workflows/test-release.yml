@@ -52,4 +52,4 @@ jobs:
           YAML
           chmod 0600 ~/.gem/credentials
       - run: bundle install
-      - run: bundle exec rake gem:push
+      - run: bundle exec rake release
