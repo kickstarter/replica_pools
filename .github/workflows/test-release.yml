@@ -45,7 +45,8 @@ jobs:
           ruby-version: "3.2"
       # The kickstarter/actions/setup-rubygems action is not available
       # because this is a public repo
-      - run: |
+      - name: setup-rubygems
+        run: |
           mkdir -p ~/.gem
           cat <<-YAML > ~/.gem/credentials
           ---
