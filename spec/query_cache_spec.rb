@@ -116,4 +116,16 @@ describe ReplicaPools::QueryCache do
       expect(TestModel.pluck(:id).count).to eql TestModel.all.count
     end
   end
+
+  describe '.ids regression test' do
+    it 'should work with query caching' do
+      TestModel.connection.enable_query_cache!
+      expect(TestModel.ids.count).to eql TestModel.all.count
+    end
+
+    it 'should work if query cache is not enabled' do
+      TestModel.connection.disable_query_cache!
+      expect(TestModel.ids.count).to eql TestModel.all.count
+    end
+  end
 end
