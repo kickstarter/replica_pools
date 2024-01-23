@@ -3,7 +3,7 @@ test: &test
   username: root
   password: ''
   host: 127.0.0.1
-  port: <%= ENV["MYSQL_PORT"] || 3309 %>
+  port: <%= ENV["MYSQL_PORT"] || 3306 %>
   encoding: utf8
   read_timeout: 1
   database: test_db
