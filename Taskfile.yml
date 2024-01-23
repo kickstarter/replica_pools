@@ -5,44 +5,33 @@ version: "3"
 dotenv:
   - .env
 
-includes:
-  ruby: ~/.ksr/tasks/ruby.yml
-  mysql: ~/.ksr/tasks/mysql.yml
-
 vars:
-  RUBY_VERSION: 2.7.5
+  RUBY_VERSION: 3.2.2
 
 tasks:
   init:
     desc: Initialize project
+    deps:
+      - up
     cmds:
-      - task: ruby:rbenv:install
-      - task: ruby:bundler:setup
-      - task: ruby:bundler:config
-      - task: ruby:bundle
-      - task: up
+      - rbenv install --skip-existing {{.RUBY_VERSION}}
+      - rbenv local {{.RUBY_VERSION}}
+      - bundle install
       - bundle exec rake bootstrap
 
-  ruby:bundler:config:
-    label: ruby:bundle:config
-    vars:
-      OPENSSL_PREFIX: { sh: brew --prefix openssl }
+  down:
+    desc: Stop local services
     cmds:
-      - bundle config set --local build.mysql2 --with-opt-dir={{.OPENSSL_PREFIX}}
-    status:
-      - >-
-        grep -F 'BUNDLE_BUILD__MYSQL2: "--with-opt-dir={{.OPENSSL_PREFIX}}"' .bundle/config
-
-  test:
-    desc: Test project
-    cmds:
-      - bundle exec rake spec
+      - docker compose down
 
   release:
     desc: Publish gem with GitHub
+    preconditions:
+      - sh: git diff HEAD --quiet
+        msg: Refusing to release with local uncommitted changes
     vars:
       VERSION:
-        sh: bundle exec ruby -r replica_pools -e 'puts "v#{ReplicaPools::VERSION}"'
+        sh: bundle exec ruby -e 'puts "v#{ReplicaPools::VERSION}"'
     cmds:
       - gh release create {{.VERSION}} --generate-notes
 
@@ -51,19 +40,22 @@ tasks:
     cmds:
       - bundle exec rake release
 
+  test:
+    desc: Run test suite
+    deps:
+      - up
+    cmds:
+      - bundle exec rake spec
+
   up:
     desc: Start local services
     cmds:
+      # Bring up local MySQL
       - docker compose up --detach
-      - task: mysql:await
-        vars:
-          ENTRYPOINT: docker compose run --rm --entrypoint mysql mysql
-          HOST: mysql
-
-  down:
-    desc: Stop local services
-    cmds:
-      - docker compose down
-
-  clean:
-    desc: Clean project
+      # Wait for MySQL to be available
+      - silent: true
+        cmd: >-
+          gum spin --spinner minidot --title 'Waiting for MySQL...' -- bash -c
+          'until docker compose run --rm mysql mysql --host mysql -e "select 1" mysql ;
+          do sleep 1 ;
+          done'

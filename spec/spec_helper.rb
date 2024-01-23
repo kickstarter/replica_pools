@@ -2,6 +2,8 @@ require 'rubygems'
 require 'bundler/setup'
 require 'logger'
 
+ENV['MYSQL_PORT'] ||= %x(docker compose port mysql 3306)[/\d+$/]
+
 module Rails
   def self.env
     ActiveSupport::StringInquirer.new("test")
