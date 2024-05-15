@@ -53,22 +53,24 @@ module ReplicaPools
     # generates a unique ActiveRecord::Base subclass for a single replica
     def connection_class(pool_name, replica_name, connection_name)
       class_name = "#{pool_name.camelize}#{replica_name.camelize}"
-      connection_config_method_name = ReplicaPools::ConnectionProxy.get_connection_config_method_name
-      ReplicaPools.const_set(class_name, Class.new(ActiveRecord::Base) do |c|
-        c.abstract_class = true
-        c.define_singleton_method(connection_config_method_name) do
-          if ActiveRecord::VERSION::MAJOR == 6
-            configurations.configs_for(env_name: connection_name.to_s, include_replicas: true)
-          elsif ActiveRecord::VERSION::MAJOR == 7
-            configurations.configs_for(env_name: connection_name.to_s, include_hidden: true)
+
+      unless ReplicaPools.const_defined?(class_name)
+        connection_config_method_name = ReplicaPools::ConnectionProxy.get_connection_config_method_name
+        ReplicaPools.const_set(class_name, Class.new(ActiveRecord::Base) do |c|
+          c.abstract_class = true
+          c.define_singleton_method(connection_config_method_name) do
+            if ActiveRecord::VERSION::MAJOR == 6
+              configurations.configs_for(env_name: connection_name.to_s, include_replicas: true)
+            elsif ActiveRecord::VERSION::MAJOR == 7
+              configurations.configs_for(env_name: connection_name.to_s, include_hidden: true)
+            end
           end
-        end
-      end)
+        end)
+      end
 
       ReplicaPools.const_get(class_name).tap do |c|
         c.establish_connection(connection_name.to_sym)
       end
     end
-
   end
 end
