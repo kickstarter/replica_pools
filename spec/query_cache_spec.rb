@@ -22,7 +22,7 @@ describe ReplicaPools::QueryCache do
       @default_replica2.should_not_receive(:select_all)
       @leader.should_not_receive(:select_all)
       3.times { @proxy.select_all(@sql) }
-      @leader.query_cache.keys.size.should == 1
+      @leader.query_cache.size.should == 1
     end
   end
 
@@ -38,9 +38,9 @@ describe ReplicaPools::QueryCache do
       5.times do |i|
         @proxy.select_all(@sql)
         @proxy.select_all(@sql)
-        @leader.query_cache.keys.size.should == 1
+        @leader.query_cache.size.should == 1
         @proxy.send(meths[i], '')
-        @leader.query_cache.keys.size.should == 0
+        @leader.query_cache.size.should == 0
       end
     end
   end
