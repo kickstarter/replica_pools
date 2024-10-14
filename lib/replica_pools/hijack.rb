@@ -18,6 +18,7 @@ module ReplicaPools
     def hijack_connection
       class << self
         alias_method :connection, :connection_proxy
+        alias_method :with_connection, :with_connection_proxy
       end
     end
   end
