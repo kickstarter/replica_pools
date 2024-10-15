@@ -50,4 +50,7 @@ RSpec.configure do |c|
   c.mock_with :rspec do |c|
     c.syntax = [:expect, :should]
   end
+
+  c.filter_run focus: true
+  c.run_all_when_everything_filtered = true
 end

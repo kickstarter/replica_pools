@@ -17,6 +17,10 @@ module ReplicaPools
         ReplicaPools.proxy
       end
 
+      def with_connection_proxy
+        yield ReplicaPools.proxy
+      end
+
       # Make sure transactions run on leader
       # Even if they're initiated from ActiveRecord::Base
       # (which doesn't have our hijack).
