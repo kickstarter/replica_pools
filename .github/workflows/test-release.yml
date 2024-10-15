@@ -20,7 +20,6 @@ jobs:
     strategy:
       matrix:
         ruby:
-          - "2.7"
           - "3.1"
           - "3.2"
           - "3.3"
@@ -33,7 +32,7 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
       - run: docker compose up --detach
-      - run: bundle install --jobs 4 --retry 3
+      - run: ACTIVE_RECORD_VERSION=${{ matrix.activerecord }} bundle install --jobs 4 --retry 3
       - run: bundle exec rake bootstrap
       - run: bundle exec rake spec
   push:
@@ -57,5 +56,5 @@ jobs:
           :rubygems_api_key: ${{ secrets.RUBYGEMS_API_KEY }}
           YAML
           chmod 0600 ~/.gem/credentials
-      - run: ACTIVE_RECORD_VERSION=${{ matrix.activerecord }} bundle install
+      - run: bundle install
       - run: bundle exec rake release
