@@ -20,9 +20,9 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
   s.rubygems_version = %q{1.3.1}
   s.required_rubygems_version = Gem::Requirement.new(">= 1.2") if s.respond_to? :required_rubygems_version=
-  s.required_ruby_version = '>= 2.7.0'
+  s.required_ruby_version = '>= 3.1.0'
 
-  s.add_dependency('activerecord', ["> 6.0", "< 8.2"])
+  s.add_dependency('activerecord', [">= 6.1", "< 8.2"])
   s.add_development_dependency('mysql2', ["~> 0.5"])
   s.add_development_dependency('rack')
   s.add_development_dependency('rspec')

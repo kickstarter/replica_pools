@@ -1,72 +1,107 @@
-require 'logger'
+# frozen_string_literal: true
 
 require 'active_record'
-require 'replica_pools/config'
-require 'replica_pools/pool'
-require 'replica_pools/pools'
-require 'replica_pools/active_record_extensions'
-require 'replica_pools/hijack'
-require 'replica_pools/query_cache'
-require 'replica_pools/connection_proxy'
 
-require 'replica_pools/engine' if defined? Rails
-ActiveRecord::Base.send :include, ReplicaPools::ActiveRecordExtensions
-
+# Rails 6+/7+ adapter built on ActiveRecord.connected_to.
+# This gem now exposes only the APIs used by Kickstarter (`with_pool`,
+# `with_leader`, `config.disable_leader`, `setup!`, and logging helpers).
+# Legacy proxy/pool-rotation APIs were intentionally removed in v3.
 module ReplicaPools
+  # Raised when writes are disallowed by `config.disable_leader`.
   class LeaderDisabled < StandardError
     def to_s
-      "Leader database has been disabled. Re-enable with ReplicaPools.config.disable_leader = false."
+      'Leader database has been disabled. Re-enable with ReplicaPools.config.disable_leader = false.'
     end
   end
 
-  class << self
+  # Minimal runtime configuration supported by the v3 API surface.
+  class Config
+    attr_accessor :disable_leader
 
-    def config
-      @config ||= ReplicaPools::Config.new
+    def initialize
+      @disable_leader = false
     end
+  end
 
-    def setup!
-      ConnectionProxy.generate_safe_delegations
+  module_function
 
-      ActiveRecord::Base.send(:extend, ReplicaPools::Hijack)
+  def config
+    @config ||= Config.new
+  end
 
-      log :info, "Proxy loaded with: #{pools.keys.join(', ')}"
+  def with_leader(&)
+    raise LeaderDisabled if config.disable_leader
+
+    with_leader_depth do
+      ActiveRecord::Base.connected_to(role: :writing, &)
     end
+  end
 
-    def proxy
-      Thread.current[:replica_pools_proxy] ||= ReplicaPools::ConnectionProxy.new(
-        ActiveRecord::Base,
-        ReplicaPools.pools
-      )
-    end
+  def with_pool(name, &)
+    return yield if within_leader_block?
 
-    def current
-      proxy.current
-    end
+    with_connected_to(
+      role: :reading,
+      shard: normalized_shard(name),
+      prevent_writes: true,
+      fallback_role: :writing,
+      &
+    )
+  end
 
-    def next_replica!
-      proxy.next_replica!
+  def establish_replica_connections
+    %i[default admin].each do |pool_name|
+      with_pool(pool_name) { ActiveRecord::Base.connection_pool.with_connection(&:active?) }
     end
+  end
 
-    def with_pool(*a)
-      proxy.with_pool(*a){ yield }
-    end
+  def setup!
+    establish_replica_connections
+  end
 
-    def with_leader
-      raise LeaderDisabled.new if ReplicaPools.config.disable_leader
-      proxy.with_leader{ yield }
-    end
+  def log(level, message)
+    Rails.logger.public_send(level, "[ReplicaPools] #{message}")
+  end
 
-    def pools
-      Thread.current[:replica_pools] ||= ReplicaPools::Pools.new
-    end
+  def with_connected_to(role:, fallback_role:, shard: ActiveRecord::Base.current_shard, prevent_writes: false, &)
+    if role_available?(role:, shard:, prevent_writes:)
+      ActiveRecord::Base.connected_to(role:, shard:, prevent_writes:, &)
+    else
+      raise LeaderDisabled if config.disable_leader && fallback_role == :writing
 
-    def log(level, message)
-      logger.send(level, "[ReplicaPools] #{message}")
+      log(:warn, "Falling back to writing role for shard=#{shard} because reading pool is unavailable")
+      fallback_prevent_writes = fallback_role == :writing ? false : prevent_writes
+      ActiveRecord::Base.connected_to(role: fallback_role, shard: :default, prevent_writes: fallback_prevent_writes, &)
     end
+  end
 
-    def logger
-      ActiveRecord::Base.logger || Logger.new(STDOUT)
-    end
+  def role_available?(role:, shard:, prevent_writes:)
+    ActiveRecord::Base.connected_to(role:, shard:, prevent_writes:) { ActiveRecord::Base.connection_pool }
+    true
+  rescue ActiveRecord::ConnectionNotEstablished
+    false
+  end
+
+  # Legacy pool names now map to the two supported shards.
+  # `admin` -> :admin, everything else -> :default
+  def normalized_shard(name)
+    return :admin if name.to_s == 'admin'
+
+    :default
+  end
+
+  def within_leader_block?
+    leader_depth.positive?
+  end
+
+  def with_leader_depth
+    Thread.current[:replica_pools_leader_depth] = leader_depth + 1
+    yield
+  ensure
+    Thread.current[:replica_pools_leader_depth] = [leader_depth - 1, 0].max
+  end
+
+  def leader_depth
+    Thread.current[:replica_pools_leader_depth].to_i
   end
 end

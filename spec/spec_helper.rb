@@ -1,58 +1,67 @@
 require 'rubygems'
 require 'bundler/setup'
+require 'active_support/all'
+require 'active_record'
+require 'erb'
 require 'logger'
+require 'yaml'
 
 ENV['MYSQL_PORT'] ||= %x(docker compose port mysql 3306)[/\d+$/]
 
 module Rails
-  def self.env
-    ActiveSupport::StringInquirer.new("test")
-  end
-end
+  class << self
+    attr_writer :logger
 
-require 'active_record'
-# Rails::Engine (loaded by replica_pools/engine) needs ActionDispatch since Rails 8.0. Real apps already have it loaded.
-require 'action_dispatch'
-spec_dir = File.dirname(__FILE__)
-ActiveRecord::Base.logger = Logger.new(spec_dir + "/debug.log")
-ActiveRecord::Base.configurations = YAML::safe_load(ERB.new(File.read(spec_dir + '/config/database.yml')).result, aliases: true)
-ActiveRecord::Base.establish_connection :test
-ActiveRecord::Migration.verbose = false
-ActiveRecord::Migration.create_table(:test_models, :force => true) {}
+    def env
+      ActiveSupport::StringInquirer.new('test')
+    end
 
-require 'replica_pools'
-ReplicaPools::Engine.initializers.each(&:run)
-ActiveSupport.run_load_hooks(:after_initialize, ReplicaPools::Engine)
-
-module ReplicaPools::Testing
-  # Creates aliases for the replica connections in each pool
-  # for easy reference in tests.
-  def create_replica_aliases(proxy)
-    proxy.replica_pools.each do |name, pool|
-      pool.replicas.each.with_index do |replica, i|
-        instance_variable_set("@#{name}_replica#{i + 1}", replica.retrieve_connection)
-      end
+    def logger
+      @logger ||= Logger.new($stdout)
     end
   end
+end
 
-  def reset_proxy(proxy)
-    proxy.replica_pools.each{|_, pool| pool.reset }
-    proxy.current_pool = proxy.replica_pools[:default]
-    proxy.current      = proxy.current_replica
+ActiveRecord::Base.logger = Logger.new(File.join(__dir__, 'debug.log'))
+ActiveRecord::Base.configurations = YAML.safe_load(
+  ERB.new(File.read(File.join(__dir__, 'config/database.yml'))).result,
+  aliases: true,
+)
+ActiveRecord::Base.establish_connection(:test)
+ActiveRecord::Migration.verbose = false
+
+ActiveRecord::Schema.define do
+  suppress_messages do
+    create_table(:test_models, force: true) do |t|
+      t.string :key
+      t.integer :value
+      t.timestamps null: false
+    end
   end
 end
 
-RSpec.configure do |c|
-  c.include ReplicaPools::Testing
+ActiveRecord::Base.connects_to(
+  shards: {
+    default: {
+      writing: :test,
+      reading: :test_pool_default_name_1,
+    },
+    admin: {
+      writing: :test,
+      reading: :test_pool_admin_name_1,
+    },
+  },
+)
 
-  # This gem mostly uses the old deprecated shoulda syntax. Support both versions for now.
-  c.expect_with :rspec do |c|
-    c.syntax = [:expect, :should]
-  end
-  c.mock_with :rspec do |c|
-    c.syntax = [:expect, :should]
+require 'replica_pools'
+require_relative 'config/test_model'
+
+RSpec.configure do |config|
+  config.expect_with :rspec do |expectations|
+    expectations.syntax = [:expect]
   end
 
-  c.filter_run focus: true
-  c.run_all_when_everything_filtered = true
+  config.mock_with :rspec do |mocks|
+    mocks.syntax = [:expect]
+  end
 end
