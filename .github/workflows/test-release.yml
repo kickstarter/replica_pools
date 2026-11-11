@@ -26,6 +26,11 @@ jobs:
         activerecord:
           - "7.1"
           - "7.2"
+          - "8.0"
+        exclude:
+          # Rails 8.0 requires Ruby 3.2+
+          - ruby: "3.1"
+            activerecord: "8.0"
     steps:
       - uses: actions/checkout@v4
       - uses: ruby/setup-ruby@v1

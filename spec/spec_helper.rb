@@ -11,6 +11,8 @@ module Rails
 end
 
 require 'active_record'
+# Rails::Engine (loaded by replica_pools/engine) needs ActionDispatch since Rails 8.0. Real apps already have it loaded.
+require 'action_dispatch'
 spec_dir = File.dirname(__FILE__)
 ActiveRecord::Base.logger = Logger.new(spec_dir + "/debug.log")
 ActiveRecord::Base.configurations = YAML::safe_load(ERB.new(File.read(spec_dir + '/config/database.yml')).result, aliases: true)
