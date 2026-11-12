@@ -69,6 +69,38 @@ describe ReplicaPools do
     end
   end
 
+  # ActiveRecord 7.2 runs queries through `with_connection` instead of `connection`.
+  context "with_connection" do
+    it 'TestModel#with_connection should yield an instance of ReplicaPools::ConnectionProxy' do
+      TestModel.with_connection { |c| c.should be_kind_of(ReplicaPools::ConnectionProxy) }
+    end
+
+    it 'should send relation reads to the replica' do
+      @default_replica1.should_receive(:select_all).at_least(:once).and_call_original
+      @leader.should_receive(:select_all).exactly(0)
+
+      TestModel.where(id: 0).to_a
+      TestModel.where(id: 0).count
+    end
+
+    it 'should send relation reads to the leader within a with_leader-block' do
+      @leader.should_receive(:select_all).at_least(:once).and_call_original
+      @default_replica1.should_receive(:select_all).exactly(0)
+
+      @proxy.with_leader do
+        TestModel.where(id: 0).to_a
+        TestModel.where(id: 0).count
+      end
+    end
+
+    it 'should send relation writes to the leader' do
+      @leader.should_receive(:delete).exactly(1).and_call_original
+      @default_replica1.should_receive(:delete).exactly(0)
+
+      TestModel.where(id: 0).delete_all
+    end
+  end
+
   context "transaction" do
     it 'should send all to leader' do
       @leader.should_receive(:select_all).exactly(1)
