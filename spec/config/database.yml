@@ -3,27 +3,12 @@ test: &test
   username: root
   password: ''
   host: 127.0.0.1
-  port: <%= ENV["MYSQL_PORT"] || 3306 %>
-  encoding: utf8
-  read_timeout: 1
+  port: <%= ENV['MYSQL_PORT'] || 3306 %>
+  encoding: utf8mb4
   database: test_db
 
-readonly_login: &readonly_login
+test_pool_default_name_1:
   <<: *test
-  username: read_only
-  password: readme
 
-test_pool_secondary_name_db1:
-  <<: *readonly_login
-
-test_pool_secondary_name_db2:
-  <<: *readonly_login
-
-test_pool_secondary_name_db3:
-  <<: *readonly_login
-
-test_pool_default_name_db1:
-  <<: *readonly_login
-
-test_pool_default_name_db2:
-  <<: *readonly_login
+test_pool_admin_name_1:
+  <<: *test
